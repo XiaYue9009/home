@@ -4,7 +4,7 @@ import HeroMoon from '../components/HeroMoon.vue';
 import InteractiveDemo from '../components/InteractiveDemo.vue';
 import PostCard from '../components/PostCard.astro';
 import { getCollection } from 'astro:content';
-import { SITE, CATEGORIES } from '../consts';
+import { SITE, CATEGORIES } from '../config/consts';
 
 const posts = (await getCollection('posts', ({ data }) => !data.draft))
   .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
@@ -12,7 +12,7 @@ const posts = (await getCollection('posts', ({ data }) => !data.draft))
 ---
 
 <BaseLayout title="首页">
-  <section class="relative overflow-hidden">
+  <section class="hero-section relative overflow-hidden">
     <HeroMoon client:load />
     <div class="relative mx-auto max-w-6xl px-4 py-24 sm:px-6 sm:py-32">
       <p class="mb-4 text-sm font-medium uppercase tracking-widest text-accent">Personal Site</p>
@@ -55,7 +55,7 @@ const posts = (await getCollection('posts', ({ data }) => !data.draft))
 </BaseLayout>
 
 <style>
-  section:first-of-type {
+  .hero-section {
     min-height: 420px;
   }
 </style>

@@ -1,10 +1,5 @@
 ---
-import { formatDate, CATEGORIES } from '../consts';
-import type { CollectionEntry } from 'astro:content';
-
-interface Props {
-  post: CollectionEntry<'posts'>;
-}
+import { formatDate, CATEGORIES } from '../config/consts';
 
 const { post } = Astro.props;
 const { title, description, pubDate, category, tags } = post.data;

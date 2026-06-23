@@ -2,13 +2,9 @@
 import BaseHead from '../components/BaseHead.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
-import '../styles/global.css';
-import { DEFAULT_THEME, THEME_STORAGE_KEY } from '../themes';
-
-interface Props {
-  title: string;
-  description?: string;
-}
+import NatureFall from '../components/NatureFall.vue';
+import '../styles/global.scss';
+import { DEFAULT_THEME, THEME_STORAGE_KEY } from '../config/themes';
 
 const { title, description } = Astro.props;
 ---
@@ -26,6 +22,7 @@ const { title, description } = Astro.props;
     </script>
   </head>
   <body class="flex min-h-screen flex-col">
+    <NatureFall client:load />
     <Header />
     <main class="flex-1">
       <slot />

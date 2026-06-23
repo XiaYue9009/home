@@ -1,11 +1,9 @@
-<script setup lang="ts">
-import { ref } from 'vue';
-
+<script setup>
 const count = ref(0);
 const hovering = ref(false);
 
-function ripple(event: MouseEvent) {
-  const btn = event.currentTarget as HTMLButtonElement;
+function ripple(event) {
+  const btn = event.currentTarget;
   const rect = btn.getBoundingClientRect();
   const rippleEl = document.createElement('span');
   const size = Math.max(rect.width, rect.height);
@@ -45,7 +43,7 @@ function ripple(event: MouseEvent) {
   </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 @keyframes ripple {
   to {
     transform: scale(2.5);

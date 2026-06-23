@@ -1,6 +1,8 @@
 ---
-import { SITE, CATEGORIES } from '../consts';
+import { SITE, CATEGORIES } from '../config/consts';
 import ThemeSwitcher from './ThemeSwitcher.vue';
+import WeatherWidget from './WeatherWidget.vue';
+import SiteLogo from './SiteLogo.astro';
 
 const navLinks = [
   { href: '/', label: '首页' },
@@ -17,7 +19,7 @@ const pathname = Astro.url.pathname;
 <header class="header-bar">
   <div class="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
     <a href="/" class="group flex shrink-0 items-center gap-2">
-      <span class="text-2xl transition-transform group-hover:scale-110">🌙</span>
+      <SiteLogo />
       <span class="font-display text-lg font-bold tracking-tight text-heading">{SITE.title}</span>
     </a>
 
@@ -40,7 +42,8 @@ const pathname = Astro.url.pathname;
       }
     </nav>
 
-    <div class="flex items-center gap-2 sm:gap-3">
+    <div class="group flex items-center gap-2 sm:gap-3">
+      <WeatherWidget client:load />
       <ThemeSwitcher client:load />
       <a
         href={SITE.github}

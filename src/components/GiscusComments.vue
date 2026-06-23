@@ -1,31 +1,33 @@
-<script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue';
-import { DEFAULT_THEME, THEMES, type ThemeId } from '../themes';
-
-interface Props {
-  repo?: string;
-  repoId?: string;
-  category?: string;
-  categoryId?: string;
-}
-
-const props = withDefaults(defineProps<Props>(), {
-  repo: import.meta.env.PUBLIC_GISCUS_REPO || 'XiaYue9009/home',
-  repoId: import.meta.env.PUBLIC_GISCUS_REPO_ID || '',
-  category: import.meta.env.PUBLIC_GISCUS_CATEGORY || 'Announcements',
-  categoryId: import.meta.env.PUBLIC_GISCUS_CATEGORY_ID || '',
+<script setup>
+const props = defineProps({
+  repo: {
+    type: String,
+    default: import.meta.env.PUBLIC_GISCUS_REPO || 'XiaYue9009/home',
+  },
+  repoId: {
+    type: String,
+    default: import.meta.env.PUBLIC_GISCUS_REPO_ID || '',
+  },
+  category: {
+    type: String,
+    default: import.meta.env.PUBLIC_GISCUS_CATEGORY || 'Announcements',
+  },
+  categoryId: {
+    type: String,
+    default: import.meta.env.PUBLIC_GISCUS_CATEGORY_ID || '',
+  },
 });
 
-const containerRef = ref<HTMLElement | null>(null);
+const containerRef = ref(null);
 const configured = ref(false);
 
-function getGiscusTheme(): string {
-  const theme = (document.documentElement.getAttribute('data-theme') as ThemeId) || DEFAULT_THEME;
+function getGiscusTheme() {
+  const theme = document.documentElement.getAttribute('data-theme') || DEFAULT_THEME;
   return THEMES[theme]?.giscus ?? 'dark_dimmed';
 }
 
 function syncGiscusTheme() {
-  const iframe = document.querySelector<HTMLIFrameElement>('iframe.giscus-frame');
+  const iframe = document.querySelector('iframe.giscus-frame');
   iframe?.contentWindow?.postMessage(
     { giscus: { setConfig: { theme: getGiscusTheme() } } },
     'https://giscus.app',
@@ -89,8 +91,10 @@ onUnmounted(() => {
   </div>
 </template>
 
-<style scoped>
-.giscus-wrapper :deep(iframe) {
-  width: 100%;
+<style lang="scss" scoped>
+.giscus-wrapper {
+  :deep(iframe) {
+    width: 100%;
+  }
 }
 </style>

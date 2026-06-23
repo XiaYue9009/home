@@ -1,10 +1,7 @@
-<script setup lang="ts">
-import { onMounted, ref } from 'vue';
-import { DEFAULT_THEME, THEME_LIST, THEME_STORAGE_KEY, type ThemeId } from '../themes';
+<script setup>
+const current = ref(DEFAULT_THEME);
 
-const current = ref<ThemeId>(DEFAULT_THEME);
-
-function applyTheme(theme: ThemeId) {
+function applyTheme(theme) {
   current.value = theme;
   document.documentElement.setAttribute('data-theme', theme);
   localStorage.setItem(THEME_STORAGE_KEY, theme);
@@ -12,7 +9,7 @@ function applyTheme(theme: ThemeId) {
 }
 
 onMounted(() => {
-  const saved = localStorage.getItem(THEME_STORAGE_KEY) as ThemeId | null;
+  const saved = localStorage.getItem(THEME_STORAGE_KEY);
   const theme = saved && THEME_LIST.some((t) => t.id === saved) ? saved : DEFAULT_THEME;
   applyTheme(theme);
 });
