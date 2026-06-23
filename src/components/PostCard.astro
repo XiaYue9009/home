@@ -1,5 +1,6 @@
 ---
 import { formatDate, CATEGORIES } from '../config/consts';
+import { withBase } from '../lib/paths';
 
 const { post } = Astro.props;
 const { title, description, pubDate, category, tags } = post.data;
@@ -7,7 +8,7 @@ const cat = CATEGORIES[category];
 ---
 
 <a
-  href={`/posts/${post.slug}`}
+  href={withBase(`posts/${post.slug}`)}
   class="glass-card glass-card-hover group block p-6 transition"
 >
   <div class="mb-3 flex items-center justify-between gap-2">

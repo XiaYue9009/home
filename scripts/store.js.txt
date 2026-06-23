@@ -1,0 +1,1595 @@
+"use strict";
+
+
+/** ��¼���� start */
+window.loginObj = null;
+
+const VuexLogin = {
+  state:{
+    _LOGIN: window.loginObj, //��¼OBJ
+    IS_LOGIN_END: false, //�Ƿ��ѵ�¼
+    userInfo: null, //��¼̬��Ϣ
+    // �����Ϣ
+    PlayerNickname: null,
+    // �û�ͷ��
+    PlayerUserFace: null,
+    // �󶨴���
+    PlayerArea: null,
+    // ����ID
+    AreaId: null,
+  },
+
+  mutations:{
+    setLoginState (state,{_state,userInfo}) {
+      state.IS_LOGIN_END = _state;
+      state.userInfo = userInfo;
+    },
+    setPlayerNickname: function (state, payload) {
+      state.PlayerNickname = payload
+    },
+    setPlayerUserFace: function (state, payload) {
+      state.PlayerUserFace = payload
+    },
+    setPlayerArea: function (state, payload) {
+      state.PlayerArea = payload
+    },
+    setAreaId: function (state, payload) {
+      state.AreaId = payload
+    },
+  },
+
+  actions:{
+    // this.$store.dispatch('login')
+    // async login() {
+    //   await state._LOGIN.init();
+    //   let login = await state._LOGIN.login();
+    //   const userInfo = state._LOGIN.getUserInfo();
+    //   store.commit('setLoginState', {_state:true, userInfo});
+    //   return userInfo;
+    // },
+    //
+    // async logout() {
+    //   await state._LOGIN.init();
+    //   window.loginObj.logout();
+    //   store.commit('setLoginState', {_state:true, userInfo:null});
+    //   return Promise.resolve();
+    // },
+    //
+    // async checkLogin() {
+    //   await state._LOGIN.init();
+    //   return state._LOGIN.checkLogin().then((userInfo) => {
+    //     console.log('��QQ��¼');
+    //     console.log(userInfo);
+    //     store.commit('setLoginState', {_state:true, userInfo});
+    //     return Promise.resolve(userInfo);
+    //   }).catch((e) => {
+    //     console.log('δ��¼');
+    //     store.commit('setLoginState', {_state:false, userInfo:null});
+    //     return Promise.reject('δ��¼');
+    //   });
+    //
+    // },
+    //
+    // async getUserInfo() {
+    //   await state._LOGIN.init();
+    //   const userInfo = await window.loginObj.getUserInfo();
+    //   return Promise.resolve(userInfo);
+    // },
+    //
+    // async getPlayerInfo({ commit }, area) {
+    //   return window.baseRequest.getPlayerInfo(area).then((resp) => {
+    //     if (resp.MobilePlayerInfo.status === 0) {
+    //       const profile = _.head(resp.MobilePlayerInfo.msg.res.uuid_prifle_list);
+    //       let logoUrl = profile.logo_url.replace('http://', '//');
+    //       logoUrl = window.Login101.parseLogoUrl(logoUrl);
+    //       profile && store.commit('setPlayerUserFace', logoUrl);
+    //       this.getPlayerInfoTimes = 0;
+    //     } else {
+    //       this.getPlayerInfoTimes++;
+    //       if (this.getPlayerInfoTimes < 5) this.getPlayerInfo(area);
+    //       else this.logout();
+    //     }
+    //     return resp;
+    //   });
+    // },
+  },
+};
+
+/** ��¼���� end */
+
+
+const state = {
+  ...VuexLogin.state,
+  // ��ǰ���������select, ������select����
+  CurrentComponentSelect: null,
+  // ��ǰ����װ��{ isActive: �Ƿ���ʾ, event: �¼�, equipmentData: װ������ }
+  TooltipEquipmentSummaryData: {},
+  // ҳ�汳��ͼ��Ӣ������
+  bgHeroData: null,
+  // Ƥ���������ͼ
+  skinBg: null,
+  // �����쳣�ر�ͨ�õ���
+  vuexDialogClose: 0,
+};
+const mutations = {
+  ...VuexLogin.mutations,
+  setCurrentComponentSelect: function (state, payload) {
+    state.CurrentComponentSelect = payload
+  },
+  setTooltipEquipmentSummaryData: function (state, payload) {
+    state.TooltipEquipmentSummaryData = payload
+  },
+
+  // Ƥ���������ͼ
+  setBgHeroData: function (state, payload) {
+    // if(router.app.$route.path == router_key){
+    //   state.bgHeroData = payload.hero_data
+    // }
+
+
+    if(payload === 'random'){
+      const random_num = window.BaseFuncLib.randomNumBoth(1,44,[_.get(state,'bgHeroData.random_num')]);
+      payload = {
+        hero_data:{
+          // guide_pic:`https://game.gtimg.cn/images/lol/act/img/guidetop/${random_num}.jpg`,
+          // guide_pic:`https://game.gtimg.cn/images/lol/act/img/101/${random_num}.jpg`,
+          guide_pic:`https://game.gtimg.cn/images/lol/lolstrategy/bg-dhjjc.jpg`,
+          name:'common_pic'
+        },
+        random_num:random_num
+      }
+    }
+
+    state.bgHeroData = {
+      ...payload.hero_data,
+      random_num: _.get(payload,'random_num')
+    }
+  },
+  setSkinBg: function (state, payload) {
+    // payload = {
+    //   pic:'',
+    //   name:''
+    // }
+
+    state.skinBg = payload
+  },
+  setVuexDialogClose: function (state, payload) {
+    state.vuexDialogClose+=1;
+  },
+};
+
+const actions = {
+  ...VuexLogin.actions,
+  //Ӣ���б���Ϣ await this.$store.dispatch('getHeroList');
+  async getHeroList() {
+    const hero_list = await window.baseRequest.getHeroList();
+    const position = await window.baseRequest.getHeroListPosition();
+    const hero_rank = await window.baseRequest.getHeroRank();
+
+    hero_list.hero = _.map(hero_list.hero,(hero)=>{
+      // վλ�ϲ�
+      hero.position = _.keys(_.get(position,'list.'+hero.heroId));
+      hero.position_info = [];
+      _.forEach(hero.position,(pos)=>{
+        hero.position_info.push(_.find(window.BaseDataManager.hero_pos,{type:pos}))
+      });
+
+      // ְҵ�ϲ�
+      hero.roles_info = [];
+      _.forEach(hero.roles,(pos)=>{
+        hero.roles_info.push(_.find(window.BaseDataManager.hero_job,{type:pos}))
+      });
+
+      hero.record_data = _.get(hero_rank,'list.'+hero.heroId);
+
+      return hero
+    });
+    return hero_list.hero;
+  },
+
+  //����Ӣ����Ϣ await this.$store.dispatch('getHeroInfo',this.heroId);
+  async getHeroInfo({ commit }, heroId) {
+    const hero_info = await window.baseRequest.getHeroInfo(heroId);
+    const position = await window.baseRequest.getHeroListPosition();
+    const hero_rank = await window.baseRequest.getHeroRank();
+
+    const hero = _.get(hero_info,'hero');
+    if(hero){
+      // վλ�ϲ�
+      hero.position = _.keys(_.get(position,'list.'+hero.heroId));
+      hero.position_info = [];
+      _.forEach(hero.position,(pos)=>{
+        hero.position_info.push(_.find(window.BaseDataManager.hero_pos,{type:pos}))
+      });
+
+      // ְҵ�ϲ�
+      hero.roles_info = [];
+      _.forEach(hero.roles,(pos)=>{
+        hero.roles_info.push(_.find(window.BaseDataManager.hero_job,{type:pos}))
+      });
+
+      hero.record_data = _.get(hero_rank,'list.'+heroId)
+    }
+    return hero_info;
+  },
+
+  //�ϲ�����ǩ���װ���б� await this.$store.dispatch('getEquipmentList');
+  async getEquipmentList({ commit }) {
+    const equipment_list = await window.baseRequest.getEquipmentList();
+    const equipment_category = await window.baseRequest.getEquipmentCategory();
+    const equipment_change = await window.baseRequest.getEquipmentUpdate();
+    _.forEach(_.get(equipment_list,'items'),(item,key)=>{
+      const category_item = _.find(_.get(equipment_category,'items_ext'),{item_id:item.itemId});
+      item['category'] = (category_item && category_item.category) ? category_item.category : [];
+      item['change'] = _.find(_.get(equipment_change,'data.list'),{name:item.name});
+    });
+    return equipment_list;
+  },
+
+  // Ӣ����������  await this.$store.dispatch('getRankOverview',{heroId,lane,ijob,gamequeueconfigid,tier});
+  async getRankOverview({ commit },{heroId,lane,ijob,gamequeueconfigid,tier}) {
+    let hero_list = await store.dispatch('getHeroList');
+    let update = window.BaseFuncLib.pushDay(new Date(),0);
+    let backDate = update.split(' ')[0].replace(new RegExp("-","g"), '');
+    // let backDate = window.BaseFuncLib.pushDay(new Date(),-1).split(' ')[0].replace(new RegExp("-","g"), '');
+    let rank_overview = await window.baseRequest.getRankOverview({heroId,lane,ijob,gamequeueconfigid,tier,backDate});
+    if(_.get(rank_overview,'details.jData.iRet') === '0'){
+      let rank_overview_result = _.get(rank_overview,'details.jData.res');
+      if(!rank_overview_result)return;
+      const championdetails = _.get(rank_overview_result,'championdetails').split('#');
+      rank_overview._update = update.split(' ')[0];
+      rank_overview._rData = _.map(championdetails,el=>{
+        const temp = el.split('_');
+        const hero_info = _.find(hero_list,{heroId:''+_.get(temp,'1')});
+        return {
+          irank:+_.get(temp,'0'),// ������
+          heroId:_.get(temp,'1'),// Ӣ��id��
+          hero_info:hero_info,// Ӣ����Ϣ��
+          grade_t:+_.get(temp,'2'),// ����
+          winrate:+(+(_.get(temp,'3')) * 100).toFixed(2),// ʤ�ʡ�
+          banrate:+(+(_.get(temp,'4')) * 100).toFixed(2),// �����ʡ�
+          showrate:+(+(_.get(temp,'5')) * 100).toFixed(2),// ѡ�ʡ��ǳ���
+          restrain:_.orderBy(_.filter(_.map(_.filter((_.get(temp,'6').replace(/[\[\]]/g, ``)).split('&'),el=>{return el!==""}),hero=>{
+            const hero_temp = hero.split(',');
+            const hero_data = _.find(hero_list,{heroId:''+hero_temp[0]});
+            if(_.intersectionWith(_.get(hero_info,'position'),_.get(hero_data,'position'),_.isEqual).length){
+              return {
+                heroId:hero_temp[0],// Ӣ��id��
+                hero_data: hero_data,
+                winrate: +(+hero_temp[1] * 100).toFixed(2)
+              }
+            }
+            return null;
+            // return {
+            //   heroId:hero_temp[0],// Ӣ��id��
+            //   hero_data: _.find(hero_list,{heroId:''+hero_temp[0]}),
+            //   winrate: hero_temp[0] * 100
+            // }
+          }),(el)=>{return el}),['winrate'],['desc']),// Ӣ�ۿ������顢
+          double:_.orderBy(_.map(_.filter((_.get(temp,'7').replace(/[\[\]]/g, ``)).split('&'),el=>{return el!==""}),hero=>{
+            if(hero === "")return null;
+            const hero_temp = hero.split(',');
+            return {
+              heroId:hero_temp[0],// Ӣ��id��
+              hero_data: _.find(hero_list,{heroId:''+hero_temp[0]}),
+              winrate: +(+hero_temp[1] * 100).toFixed(2)
+            }
+          }),['winrate'],['desc']),// ���˫��TOP3����
+          ranking_change:Math.floor(_.get(temp,'8')),// �����仯����������-����������
+
+        };
+      });
+    }
+    console.log(999,rank_overview)
+    return rank_overview;
+  },
+
+  // ���˫��  await this.$store.dispatch('getRankDouble',{heroId,tier,lane1,lane2,pagesize,pageindex});
+  async getRankDouble({ commit },{heroId,tier,lane1,lane2,pagesize,pageindex}) {
+    const hero_list = await store.dispatch('getHeroList');
+    const hero_rank = await window.baseRequest.getHeroRank();
+    // console.log('hero_rank',hero_rank)
+    let update = window.BaseFuncLib.pushDay(new Date(),-1);
+    let backDate = update.split(' ')[0].replace(new RegExp("-","g"), '');
+    let rank_double = await window.baseRequest.getRankDouble({heroId,tier,lane1,lane2,pagesize,pageindex,backDate});
+    if(_.get(rank_double,'code') === 0){
+      let rData = _.get(rank_double,'data');
+      if(!rData || !rData.length){
+        update = window.BaseFuncLib.pushDay(new Date(),-2);
+        backDate = update.split(' ')[0].replace(new RegExp("-","g"), '');
+        rank_double = await window.baseRequest.getRankDouble({heroId,tier,lane1,lane2,pagesize,pageindex,backDate});
+      }
+      rData = _.get(rank_double,'data');
+      if(!rData || !rData.length){
+        update = window.BaseFuncLib.pushDay(new Date(),-3);
+        backDate = update.split(' ')[0].replace(new RegExp("-","g"), '');
+        rank_double = await window.baseRequest.getRankDouble({heroId,tier,lane1,lane2,pagesize,pageindex,backDate});
+      }
+      rData = _.get(rank_double,'data');
+      if(!rData || !rData.length){
+        update = window.BaseFuncLib.pushDay(new Date(),-4);
+        backDate = update.split(' ')[0].replace(new RegExp("-","g"), '');
+        rank_double = await window.baseRequest.getRankDouble({heroId,tier,lane1,lane2,pagesize,pageindex,backDate});
+      }
+      rData = _.get(rank_double,'data');
+      if(!rData || !rData.length){
+        update = window.BaseFuncLib.pushDay(new Date(),-5);
+        backDate = update.split(' ')[0].replace(new RegExp("-","g"), '');
+        rank_double = await window.baseRequest.getRankDouble({heroId,tier,lane1,lane2,pagesize,pageindex,backDate});
+      }
+      rData = _.get(rank_double,'data');
+      rank_double._update = update.split(' ')[0];
+      rank_double._rData =  _.map(rData,(el)=>{
+        el.hero1_info = _.find(hero_list,{heroId:el.championid1});
+        el.hero2_info = _.find(hero_list,{heroId:el.championid2});
+        el.hero1_info.banrate = +(_.get(_.find(_.get(hero_rank,'list'),{championid:el.championid1}),'banrate')) / 100;
+        el.hero2_info.banrate = +(_.get(_.find(_.get(hero_rank,'list'),{championid:el.championid2}),'banrate')) / 100;
+        el.doublewinrate = (+el.doublewinrate * 100).toFixed(2);
+        el.itemp1 = el.itemp1 ? +el.itemp1.replace('%', '') : null;
+        el.iwinrate1 = (+el.iwinrate1 * 100).toFixed(2);
+        el.iwinrate2 = (+el.iwinrate2 * 100).toFixed(2);
+        return el;
+      });
+    }
+    return rank_double;
+  },
+
+  // Ӣ����������  await this.$store.dispatch('getRankFieldAverage',{heroId,time_type,tier});
+  async getRankFieldAverage({ commit },{heroId,time_type,tier}) {
+    const hero_list = await store.dispatch('getHeroList');
+    let update = window.BaseFuncLib.pushDay(new Date(),-1);
+    let backDate = update.split(' ')[0].replace(new RegExp("-","g"), '');
+    let rank_field_average = await window.baseRequest.getRankFieldAverage({heroId,time_type,tier,backDate});
+    if(_.get(rank_field_average,'code') === 0){
+      let result = _.get(rank_field_average,'data.result');
+      if(!result){
+        update = window.BaseFuncLib.pushDay(new Date(),-2);
+        backDate = update.split(' ')[0].replace(new RegExp("-","g"), '');
+        rank_field_average = await window.baseRequest.getRankFieldAverage({heroId,time_type,tier,backDate});
+      }
+      result = _.get(rank_field_average,'data.result');
+      if(!result){
+        update = window.BaseFuncLib.pushDay(new Date(),-3);
+        backDate = update.split(' ')[0].replace(new RegExp("-","g"), '');
+        rank_field_average = await window.baseRequest.getRankFieldAverage({heroId,time_type,tier,backDate});
+      }
+      result = _.get(rank_field_average,'data.result');
+      if(!result){
+        update = window.BaseFuncLib.pushDay(new Date(),-4);
+        backDate = update.split(' ')[0].replace(new RegExp("-","g"), '');
+        rank_field_average = await window.baseRequest.getRankFieldAverage({heroId,time_type,tier,backDate});
+      }
+      result = _.get(rank_field_average,'data.result');
+      if(!result){
+        update = window.BaseFuncLib.pushDay(new Date(),-5);
+        backDate = update.split(' ')[0].replace(new RegExp("-","g"), '');
+        rank_field_average = await window.baseRequest.getRankFieldAverage({heroId,time_type,tier,backDate});
+      }
+      result = _.get(rank_field_average,'data.result');
+      if(!result)return;
+      const championdetails = _.get(JSON.parse(result),'championdetails').split('#');
+      rank_field_average._update = update.split(' ')[0];
+      rank_field_average._rData = _.map(championdetails,el=>{
+        const temp = el.split('_');
+        return {
+          irank:+_.get(temp,'0'),// ������
+          heroId:_.get(temp,'1'),// Ӣ��id��
+          hero_info:_.find(hero_list,{heroId:''+_.get(temp,'1')}),// Ӣ����Ϣ��
+          kda:+_.get(temp,'2'), // kda
+          hurt:+_.get(temp,'3'), // ����Ӣ���˺�
+          injury:+_.get(temp,'4'), // ��������
+          treatment:+_.get(temp,'5'), // ��������
+          play_time:+_.get(temp,'6'), // ����ʱ��
+          play_time_min:+Math.ceil((+_.get(temp,'6')) / 60), // ����ʱ�� ����
+          economy:+_.get(temp,'7'), // ��������
+          kill:+_.get(temp,'8'), // ������ɱ
+          assists:+_.get(temp,'9'), // ��������
+          showrate:+(+(_.get(temp,'10')) * 100).toFixed(2), // �ǳ���
+          banrate:+(+(_.get(temp,'11')) * 100).toFixed(2), // ������
+
+        };
+      });
+    }
+    return rank_field_average;
+  },
+
+  // ���Ҷ�������  await this.$store.dispatch('getRankFight');
+  async getRankFight({ commit }) {
+    let hero_list = await store.dispatch('getHeroList');
+    let res = null;
+    let data = {};
+    res = await window.BaseFuncLib.recursionRque(window.baseRequest.getRankFight,{},'data.result');
+    if(!_.get(res,'result')) return null;
+    let result = JSON.parse(_.get(res,'result'));
+    let listcollect = result ? _.get(result,'listcollect') : null;
+    if(!result || !listcollect)return;
+    listcollect = listcollect.split('#');
+    data._rData = _.orderBy(_.map(listcollect,(el,i)=>{
+      const temp = el.split('_');
+      const hero_info = _.find(hero_list,{heroId:''+_.get(temp,'0')});
+      return {
+        heroId:''+_.get(temp,'0'),// Ӣ��id��
+        irank:+_.get(temp,'1'),// ������
+        ranking_change:(function () {
+          let str = _.get(temp,'2')
+          let change = 0;
+          if(str === 'δ�仯'){
+            change = 0;
+          }else if(str.indexOf('����') !== -1){
+            change = +str.replace(/[����λ]/g, '')
+          }else if(str.indexOf('�½�') !== -1){
+            change = -str.replace(/[�½�λ]/g, '')
+          };
+          return change
+        })(),// �����仯����������-����������
+        winrate:+(+(_.get(temp,'3')) * 100).toFixed(2),// ʤ�ʡ�
+        showrate:+(+(_.get(temp,'4')) * 100).toFixed(2),// ѡ�ʡ��ǳ���
+        over_time:Math.ceil(_.get(temp,'6')),// ��������ʱ��
+        gather_rate:+(+(_.get(temp,'7')) * 100).toFixed(2),// ����������
+        output_rate:+(+(_.get(temp,'8')) * 100).toFixed(2),// �����˺�ռ��
+        injury_rate:+(+(_.get(temp,'9')) * 100).toFixed(2),// ��������ռ��
+        hero_info:hero_info,// Ӣ����Ϣ��
+        double:_.orderBy(_.map(_.filter((_.get(temp,'5').replace(/[\[\]]/g, ``)).split('&'),el=>{return el!==""}),hero=>{
+          if(hero === "")return null;
+          const hero_temp = hero.split(',');
+          return {
+            heroId:_.get(hero_temp,'0'),// Ӣ��id��
+            hero_data: _.find(hero_list,{heroId:''+_.get(hero_temp,'0')}),
+            showrate: +(+_.get(hero_temp,'1') * 100).toFixed(2), //˫�ŵǳ���
+            winrate: +(+_.get(hero_temp,'2') * 100).toFixed(2), //˫��ʤ��
+            irank: +_.get(hero_temp,'3') //����
+          }
+        }),['irank'],['asc']),// ���˫��TOP50��˫�ŵǳ��ʡ�˫��ʤ�ʡ�������
+
+      };
+    }),['irank'],['asc']);
+    data._update = _.get(result,'dtstatdate') ? (()=>{
+      let dtstatdate = _.get(result,'dtstatdate');
+      return dtstatdate.substr(0,4)+'-'+dtstatdate.substr(4,2)+'-'+dtstatdate.substr(6,2);
+    })() : _.get(_.split(_.get(res,'update'),' '),'0');
+
+    console.log(data)
+    return data;
+  },
+
+  // ���Ҷ���Ӣ������  await this.$store.dispatch('getFighthero',1);
+  async getFighthero({ commit },championid) {
+    let res = null;
+    let data = {};
+    res = await window.BaseFuncLib.recursionRque(window.baseRequest.getFighthero,{championid},'data.result');
+    if(!_.get(res,'result')) return null;
+    let result = JSON.parse(_.get(res,'result'));
+
+    let hero_list = await store.dispatch('getHeroList');
+    data._rData = {
+      // ʤ����ʱ�����ƣ�0-20��20-25��25-30��30+��
+      timesectionwinrate:(function () {
+        if(!_.get(result,'timesectionwinrate'))return null;
+        const temp = _.get(result,'timesectionwinrate').split('#');
+        return _.map(temp,(el)=>{
+          let tmp = el.split('&');
+          return {
+            timer:_.get(tmp,'0'),// �Ծ�ʱ������
+            winrate:+(+(_.get(tmp,'1')) * 100).toFixed(2),// ʤ��
+          }
+        });
+      })(),
+      // ������װTOP8���������ġ��ǳ��ʡ�ʤ�ʣ�
+      styledetails:(function () {
+        if(!_.get(result,'styledetails'))return null;
+        const temp = _.get(result,'styledetails').split('#');
+        return _.map(temp,(el)=>{
+          let tmp = el.split('$');
+          let rune = _.get(tmp,'0').split('&');
+          return {
+            rune_mainperk:_.get(rune,'0').split(','),// ��ϵ����ϵ��,��ϵ����1,��ϵ����2,��ϵ����3,��ϵ����4
+            rune_viceperk:_.get(rune,'1').split(','),// ��ϵ����ϵ��,��ϵ����1,��ϵ����2
+            rune_miniperk:_.get(rune,'2').split(','),// miniϵ��,����1,����2,����3 ������û�з��أ�
+            showrate: +(+_.get(tmp,'1') * 100).toFixed(2), // �ǳ���
+            winrate:+(+_.get(tmp,'2') * 100).toFixed(2), // ʤ��
+          }
+        })
+      })(),
+      // �ٻ�ʦ����TOP2��2�����ǳ��ʡ�ʤ�ʣ�
+      spellid:(function () {
+        if(!_.get(result,'spellid'))return null;
+        const temp = _.get(result,'spellid').split('#');
+        return _.map(temp,(el)=>{
+          let tmp = el.split('$');
+          return {
+            spellid:_.get(tmp,'0').split(','),// �ٻ�ʦ����1,2
+            showrate: +(+_.get(tmp,'1') * 100).toFixed(2), // �ǳ���
+            winrate:+(+_.get(tmp,'2') * 100).toFixed(2), // ʤ��
+          }
+        })
+      })(),
+      // ��װTOP20���ǳ��ʡ�ʤ�ʣ�
+      itemover:(function () {
+        if(!_.get(result,'itemover'))return null;
+        const temp = _.get(result,'itemover').split('#');
+        return _.map(temp,(el)=>{
+          let tmp = el.split('$');
+          return {
+            itemId:_.get(tmp,'0').split(','),// װ��1,2,3,4,5,6
+            showrate: +(+_.get(tmp,'1') * 100).toFixed(2), // �ǳ���
+            winrate:+(+_.get(tmp,'2') * 100).toFixed(2), // ʤ��
+          }
+        })
+      })(),
+      // ����װ�Ƽ�TOP5���ǳ��ʡ�ʤ�ʣ�
+      itemout:(function () {
+        if(!_.get(result,'itemout'))return null;
+        const temp = _.get(result,'itemout').split('#');
+        return _.map(temp,(el)=>{
+          let tmp = el.split('$');
+          return {
+            itemId:_.get(tmp,'0').split(','),// װ��1,2
+            showrate: +(+_.get(tmp,'1') * 100).toFixed(2), // �ǳ���
+            winrate:+(+_.get(tmp,'2') * 100).toFixed(2), // ʤ��
+          }
+        })
+      })(),
+      // ����װ�Ƽ�TOP10���ǳ��ʡ�ʤ�ʣ�
+      itemcore:(function () {
+        if(!_.get(result,'itemcore'))return null;
+        const temp = _.get(result,'itemcore').split('#');
+        return _.map(temp,(el)=>{
+          let tmp = el.split('$');
+          return {
+            itemId:_.get(tmp,'0').split(','),// װ��1,2
+            showrate: +(+_.get(tmp,'1') * 100).toFixed(2), // �ǳ���
+            winrate:+(+_.get(tmp,'2') * 100).toFixed(2), // ʤ��
+          }
+        })
+      })(),
+      // Ь��TOP5���ǳ��ʡ�ʤ�ʣ�
+      itemshoes:(function () {
+        if(!_.get(result,'itemshoes'))return null;
+        const temp = _.get(result,'itemshoes').split('#');
+        return _.map(temp,(el)=>{
+          let tmp = el.split('$');
+          return {
+            itemId:_.get(tmp,'0').split(','),// װ��1,2
+            showrate: +(+_.get(tmp,'1') * 100).toFixed(2), // �ǳ���
+            winrate:+(+_.get(tmp,'2') * 100).toFixed(2), // ʤ��
+          }
+        })
+      })(),
+      // ���˫��TOP20��˫�ŵǳ��ʡ�˫��ʤ�ʣ�
+      doublechampiondetails:(function () {
+        if(!_.get(result,'doublechampiondetails'))return null;
+        const temp = _.get(result,'doublechampiondetails').split('#');
+        return _.map(temp,(el)=>{
+          let tmp = el.split('&');
+          return {
+            heroId:_.get(tmp,'0'),// Ӣ��id
+            hero_data: _.find(hero_list,{heroId:''+_.get(tmp,'0')}),
+            showrate: +(+_.get(tmp,'1') * 100).toFixed(2), // �ǳ���
+            winrate:+(+_.get(tmp,'2') * 100).toFixed(2), // ʤ��
+          }
+        })
+      })(),
+      // �Ƽ����ܼӵ�TOP3�����ܼ���˳��1��2��3 ���ǳ��ʡ�ʤ�ʡ�����ǰ15���ӵ㣩
+      skilllist:(function () {
+        // result.skilllist = "1,3,2,1,1,4,1,2,1,3,4,2,3,2,3&0.0012&0.9885#1,3,2,1,1,4,1,2,1,3,4,2,3,2&0.0038&0.9668#1,3,2,1,1,4,1,3,1,2,4,3,2,3,2&0.0013&0.9667_1,2,3"
+        if(!_.get(result,'skilllist'))return null;
+        const temp1 = _.get(result,'skilllist').split('_');
+        const temp2 = _.split(_.get(temp1,'0'),'#');
+        return {
+          qwe:_.split(_.get(temp1,'1'),','),//���ܼ���˳��,
+          sks:_.map(temp2,(el)=>{
+            let tmp = el.split('&');
+            return {
+              sk:_.split(_.get(tmp,'0'),','),// ���ܼ���˳��1��2��3 ����ǰ15���ӵ�
+              showrate: +(+_.get(tmp,'1') * 100).toFixed(2), // �ǳ���
+              winrate:+(+_.get(tmp,'2') * 100).toFixed(2), // ʤ��
+            }
+          })
+        }
+      })(),
+    };
+    data._update = _.get(result,'dtstatdate') ? (()=>{
+      let dtstatdate = _.get(result,'dtstatdate');
+      return dtstatdate.substr(0,4)+'-'+dtstatdate.substr(4,2)+'-'+dtstatdate.substr(6,2);
+    })() : _.get(_.split(_.get(res,'update'),' '),'0');
+    return data;
+  },
+
+  // �����Ƕ��꾺������Ӣ������  await this.$store.dispatch('getArenahero',1);
+  async getArenahero({ commit },championid) {
+    let data = {};
+    let res = await window.baseRequest.getArenahero({championid});
+    let augment_list = await window.baseRequest.getAugmentList();
+
+    if(!_.get(res,'data')) return null;
+    // let result = JSON.parse(_.get(res,'data'));
+    let result = _.get(res,'data');
+
+    // ����
+    // let rune_list = await window.baseRequest.getRuneList();
+    const hero_list = await store.dispatch('getHeroList');
+    const equipment_list = _.get(await window.baseRequest.getEquipmentList(),'items');
+    const spells = _.get(await store.dispatch('getHeroInfo',championid),'spells')
+    const spells_basics = _.filter(spells,(item)=>{return item.spellKey !== "passive"})
+    data._rData = {
+      // �Ƽ�ǿ������top10
+      augmentjson:_.flatMap(JSON.parse(_.get(result,'augmentjson')),function (el) {
+        return {
+          augmentid:_.get(el,'augmentid'),
+          showrate:+(+(_.get(el,'showrate')) / 100).toFixed(2),
+          augment_data:_.find(augment_list,{id:+_.get(el,'augmentid')})
+        }
+      }),
+      // ���˫��Ӣ��top5
+      championidjson:_.flatMap(JSON.parse(_.get(result,'championidjson')),function (el) {
+        return {
+          championid:_.get(el,'championid'),
+          douwinrate:+_.get(el,'douwinrate') / 100,
+          hero_data:_.find(hero_list,{heroId:_.get(el,'championid')})
+        }
+      }),
+      // �ǳ���top5�Ƽ���װ
+      itemshowjson:(function () {
+        return _.flatMap(JSON.parse(_.get(result,'itemshowjson')),function (el) {
+          return {
+            // ����װ��idƴ��
+            itemover:_.flatMap(_.get(el,'itemover').split(','),function (id) {
+              return _.find(equipment_list, {itemId:id})
+            }),
+            // ����װ���ǳ���
+            showrate:+(+(_.get(el,'showrate')) / 100).toFixed(2),
+            // ����װ��ʤ��
+            winrate:+(+(_.get(el,'winrate')) / 100).toFixed(2),
+            // ����װ����Ӧʹ�ó�����ߵĳ���װ
+            itemout:_.flatMap(_.get(el,'itemout').split(','),function (id) {
+              return _.find(equipment_list, {itemId:id})
+            }),
+            // ����װ����Ӧʹ�ó�����ߵĺ���װ
+            itemcore:_.flatMap(_.get(el,'itemcore').split(','),function (id) {
+              return _.find(equipment_list, {itemId:id})
+            }),
+          }
+        })
+      })(),
+      // ʤ��top5�Ƽ���װ
+      itemwinjson:(function () {
+        return _.flatMap(JSON.parse(_.get(result,'itemwinjson')),function (el) {
+          return {
+            // ����װ��idƴ��
+            itemover:_.flatMap(_.get(el,'itemover').split(','),function (id) {
+              return _.find(equipment_list, {itemId:id})
+            }),
+            // ����װ���ǳ���
+            showrate:+(+(_.get(el,'showrate')) / 100).toFixed(2),
+            // ����װ��ʤ��
+            winrate:+(+(_.get(el,'winrate')) / 100).toFixed(2),
+            // ����װ����Ӧʹ�ó�����ߵĳ���װ
+            itemout:_.flatMap(_.get(el,'itemout').split(','),function (id) {
+              return _.find(equipment_list, {itemId:id})
+            }),
+            // ����װ����Ӧʹ�ó�����ߵĺ���װ
+            itemcore:_.flatMap(_.get(el,'itemcore').split(','),function (id) {
+              return _.find(equipment_list, {itemId:id})
+            }),
+          }
+        })
+      })(),
+      // �Ƽ����ܼӵ�
+      // qwe�����ܵ���˳��
+      // qwe_s���ü��ܵ���˳��ǳ���
+      // qwe_w���ü��ܵ���˳��ʤ��
+      // sks�����ܼӵ�˳��
+      // sk_s���ü��ܼӵ�˳��ǳ���
+      // sk_w���ü��ܼӵ�˳��ʤ��
+      skilljson:(function () {
+        const rs = JSON.parse(_.get(result,'skilljson'))
+        const qwe_key = {1: "Q", 2: "W", 3: "E", 4: "R"};
+        _.forEach(rs,(item,idx)=>{
+          item.order = +idx;
+          //�ӵ�ͷ������
+          item.qwe = item.qwe.split('&');
+          item.qwe_s = +(+(_.get(item,'qwe_s')) / 100).toFixed(2);
+          item.qwe_w = +(+(_.get(item,'qwe_w')) / 100).toFixed(2);
+          if(+championid === 77){
+            // ����Ӣ������ȱʧ����(�Ƚӿ��޸�����ɾ��)
+            item.qwe = _.flatMap(item.qwe,(el)=>{return el?el:4})
+          }
+          item.spells = [];
+          _.forEach(item.qwe,(key)=>{
+            const spell = _.find(spells_basics,(spell)=>{
+              const tmp1 = _.get(spell,'spellKey')
+              const tmp2 = _.get(qwe_key,key)
+              return (tmp1 && tmp1.toLowerCase()) === (tmp2 && tmp2.toLowerCase());
+            });
+            if(spell){
+              spell.order = +key;
+              spell.spellKey = spell.spellKey.toUpperCase();
+              item.spells.push(spell)
+            }
+          });
+          _.forEach(item.sks,(sk)=>{
+            sk.sk = sk.sk.split('&');
+            sk.sk_s = +sk.sk_s / 100;
+            sk.sk_w = +sk.sk_w / 100;
+            sk.sk_data = [];
+            sk.spell_data = null;
+            const count = {
+              "1": 0,
+              "2": 0,
+              "3": 0,
+              "4": 0
+            };
+            if(+championid === 121){
+              // ����Ӣ�����⴦��
+              _.forEach(sk.sk,(key,i)=>{
+                //�ӵ���������
+                if(i===6 || i===12){
+                  const cur = sk.sk_data[sk.sk_data.length-1];
+                  cur.spellKey = cur.spellKey+''+qwe_key[key];
+                  cur.sk_key = cur.sk_key+''+qwe_key[key];
+                  cur._color = true;
+                }else{
+                  count[key]++;
+                  const spell = count[key] === 5 ? _.find(spells_basics,(spell)=>{
+                    return spell.spellKey.toLowerCase() === qwe_key[key].toLowerCase();
+                  }) : null;
+                  sk.sk_data.push({
+                    sk_key:key,
+                    _color:false,
+                    spellKey:_.get(qwe_key,key),
+                    data: spell
+                  })
+                }
+              });
+            }else{
+              _.forEach(sk.sk,(key,i)=>{
+                //�ӵ���������
+                count[key]++;
+                const spell = count[key] === 5 ? _.find(spells_basics,(spell)=>{
+                  return spell.spellKey.toLowerCase() === qwe_key[key].toLowerCase();
+                }) : null;
+                sk.sk_data.push({
+                  sk_key:key,
+                  _color:(i+1===6 || i+1===11),
+                  spellKey:_.get(qwe_key,key),
+                  data: spell
+                })
+              });
+            }
+          });
+        });
+        return _.orderBy(rs,['order'],['asc']);
+      })(),
+    };
+    data._update = _.get(result,'dtstatdate') ? (()=>{
+      let dtstatdate = _.get(result,'dtstatdate');
+      return dtstatdate.substr(0,4)+'-'+dtstatdate.substr(4,2)+'-'+dtstatdate.substr(6,2);
+    })() : _.get(_.split(_.get(res,'update'),' '),'0');
+    return data;
+  },
+
+  // �����Ƕ��꾺��������  await this.$store.dispatch('getArenaRank',{});
+  async getArenaRank({ commit },{championid,role,item,order}) {
+    const hero_list = await store.dispatch('getHeroList');
+    let res = await window.BaseFuncLib.recursionRque(window.baseRequest.getArenaRank,{championid,role,item,order},'data','Array');
+    if (!_.get(res,'result')) return null;
+    let data = {};
+    data._rowData = res;
+    data._rData = _.map(_.get(res,'result'),(el)=>{
+      el.hero_info = _.find(hero_list,{heroId:_.get(el,'championid')});//Ӣ��
+      el.heroId = _.get(el,'championid');//Ӣ��id
+      el.role = _.split(_.get(el,'role'),',')//Ӣ�۶�λ
+      //Ӣ�۶�λ
+      el.role_list = _.flatMap(el.role,function (role) {
+        return _.find(window.BaseDataManager.hero_job,{type:role})
+      })
+      el.irank = +_.get(el,'irank')//����
+      el.grade_t = +_.get(el,'hero_tier')//Ӣ��Tier0~4����
+      el.winrate = +(+(_.get(el,'winrate')) * 100).toFixed(2)//ʤ��
+      el.userate = +(+(_.get(el,'userate')) * 100).toFixed(2)//�ǳ���
+      el.banrate = +(+(_.get(el,'banrate')) * 100).toFixed(2)//������
+      return el;
+    });
+    data._update = _.get(_.split(_.get(res,'update'),' '),'0');
+    return data;
+  },
+
+  // ���꾺����˫������
+  async getArenaRankDouble({ commit },{championid,role1,role2,pagesize,pageindex,item,order}) {
+    const hero_list = await store.dispatch('getHeroList');
+    // const hero_rank = await window.baseRequest.getHeroRank();
+    let res = await window.BaseFuncLib.recursionRque(window.baseRequest.getArenaRankDouble,{championid,role1,role2,pagesize,pageindex,item,order},'data','Array');
+    // if (!_.get(res,'result')) return null;
+    let data = {};
+    data._rData = _.map(_.get(res,'result'),(el)=>{
+      el.hero1_info = _.find(hero_list,{heroId:el.championid1});
+      el.hero2_info = _.find(hero_list,{heroId:el.championid2});
+      // el.hero1_info.banrate = +(_.get(_.find(_.get(hero_rank,'list'),{championid:el.championid1}),'banrate')) / 100;
+      // el.hero2_info.banrate = +(_.get(_.find(_.get(hero_rank,'list'),{championid:el.championid2}),'banrate')) / 100;
+      el.douwinrate = (+el.douwinrate * 100).toFixed(2);//˫��ʤ��
+      el.iratepct = (+el.iratepct * 100).toFixed(2);//˫�ŵǳ���
+      el.banrate1 = (+el.banrate1 * 100).toFixed(2);//Ӣ��1������
+      el.banrate2 = (+el.banrate2 * 100).toFixed(2);//Ӣ��2������
+      // window.BaseDataManager.hero_job
+      el.role1_name = _.get(_.find(window.BaseDataManager.hero_job,{type:el.role1}),'name')
+      el.role2_name = _.get(_.find(window.BaseDataManager.hero_job,{type:el.role2}),'name')
+      return el;
+    });
+    data._update = _.get(_.split(_.get(res,'update'),' '),'0');
+    return data;
+  },
+
+  // ����ۺ�ר��ֵ����  await this.$store.dispatch('getCompetitivenessRanking',{areaId,backDate,page=1});
+  async getCompetitivenessRanking({ commit },{areaId,page}) {
+    let res = null;
+    let data = {};
+    res = await window.BaseFuncLib.recursionRque(window.baseRequest.getCompetitivenessRanking,{areaId, page},'data.result');
+    if(!_.get(res,'result')) return null;
+    let result = JSON.parse(_.get(res,'result'));
+    let hero_list = await store.dispatch('getHeroList');
+    data._rData = _.map(_.split(_.get(result,'summonerdetails'),'#'),(item)=>{
+      let temp1 = _.split(item,'_');
+      return {
+        irank:+_.get(temp1,'0'), // �ۺ�ר��ֵ����
+        mastery:Math.ceil(+_.get(temp1,'1')), // �ۺ�ר��ֵ
+        playerId:_.get(temp1,'2'), // ��ҽ�ɫid
+        // avatar:"//game.gtimg.cn/images/lol/v2/personal/avatar/default.png", // ���ͷ��
+        // nickname:Util.charset.Base64.decode(_.get(temp1,'3'),"utf8"), // ��ҽ�ɫ�ǳ�
+        nickname:decodeURIComponent(_.get(temp1,'3')), // ��ҽ�ɫ�ǳ�
+        // ר��ֵǰ����Ӣ��������Ӣ��id��Ӣ��ר��ֵ
+        hero_top3:_.map(_.split( _.get(temp1,'4').replace('1:', '1,').replace(',2:', ':2,').replace(',3:', ':3,'),':'),(el)=>{
+          let tmp = _.split(el,',');
+          return {
+            irank:+_.get(tmp,'0'), // ר��ֵ����
+            heroId:_.get(tmp,'1'), // Ӣ��id
+            hero_data: _.find(hero_list,{heroId:''+_.get(tmp,'1')}),
+            mastery:Math.ceil(+_.get(tmp,'2')), // ר��ֵ
+          }
+        }),
+        // ��ҵ�˫�Ŷ�λ��0�����ߡ�5����ʦ��6����ʦ
+        tier:(function () {
+          let tier = '';
+          switch (+_.get(temp1, '54')) {
+            case 0:
+              tier = window.BaseDataManager.tier_data(0);
+              break;
+            case 5:
+              tier = window.BaseDataManager.tier_data(7);
+              break;
+            case 6:
+              tier = window.BaseDataManager.tier_data(6);
+              break;
+            case 11:
+              tier = window.BaseDataManager.tier_data(1,1);
+              break;
+            case 12:
+              tier = window.BaseDataManager.tier_data(1,2);
+              break;
+            case 13:
+              tier = window.BaseDataManager.tier_data(1,3);
+              break;
+            case 14:
+              tier = window.BaseDataManager.tier_data(1,4);
+              break;
+            case 20:
+              tier = window.BaseDataManager.tier_data(2,1);
+              break;
+            case 30:
+              tier = window.BaseDataManager.tier_data(3,1);
+              break;
+            case 40:
+              tier = window.BaseDataManager.tier_data(4,1);
+              break;
+            case 50:
+              tier = window.BaseDataManager.tier_data(5,1);
+              break;
+            default:
+          }
+          return tier;
+        })(),
+        avatar:`https://down.qq.com/lolapp/lol/summoner/profileicon/${_.get(temp1,'6')}.jpg`, //ͷ��id
+        player_level:_.get(temp1,'7'), //��ҵȼ�
+        winrate: +(+_.get(temp1,'7') * 100).toFixed(2), //��˫��ʤ��
+      }
+    });
+    data._update = _.get(result,'dtstatdate') ? (()=>{
+      let dtstatdate = _.get(result,'dtstatdate');
+      return dtstatdate.substr(0,4)+'-'+dtstatdate.substr(4,2)+'-'+dtstatdate.substr(6,2);
+    })() : _.get(_.split(_.get(res,'update'),' '),'0');
+    return data;
+  },
+
+  // ��Ӣ��ר��-����б�  await this.$store.dispatch('getCompetitivenessHeroPlayer',{areaId,heroId});
+  async getCompetitivenessHeroPlayer({ commit },{areaId,heroId}) {
+    // const equipment_list = await this.$store.dispatch('getEquipmentList');
+    // const rune_list = await window.baseRequest.getRuneList();
+    let res = null;
+    let data = {};
+    res = await window.BaseFuncLib.recursionRque(window.baseRequest.getCompetitivenessHeroPlayer,{areaId,heroId},'data.result');
+    if(!_.get(res,'result')) return null;
+    let result = JSON.parse(_.get(res,'result'));
+
+    data._rData = _.map(_.split(_.get(result,'summonerdetails'),'#'),(item)=>{
+      let temp1 = _.split(item,'_');
+      let tmp_data = {
+        irank:+_.get(temp1,'0'), // �ۺ�ר��ֵ����
+        mastery:Math.ceil(+_.get(temp1,'1')), // ר��ֵ
+        playerId:_.get(temp1,'2'), // ���id
+        avatar:"//game.gtimg.cn/images/lol/v2/personal/avatar/default.png", // ���ͷ��
+        nickname:Util.charset.Base64.decode(_.get(temp1,'3'),"utf8"), // ����ǳ�
+        // ��λ��0�����ߡ�5����ʦ��6����ʦ
+        tier:(function () {
+          let tier = '';
+          switch (+_.get(temp1, '4')) {
+            case 0:
+              tier = window.BaseDataManager.tier_data(0);
+              break;
+            case 5:
+              tier = window.BaseDataManager.tier_data(7);
+              break;
+            case 6:
+              tier = window.BaseDataManager.tier_data(6);
+              break;
+            case 11:
+              tier = window.BaseDataManager.tier_data(1,1);
+              break;
+            case 12:
+              tier = window.BaseDataManager.tier_data(1,2);
+              break;
+            case 13:
+              tier = window.BaseDataManager.tier_data(1,3);
+              break;
+            case 14:
+              tier = window.BaseDataManager.tier_data(1,4);
+              break;
+            case 20:
+              tier = window.BaseDataManager.tier_data(2,1);
+              break;
+            case 30:
+              tier = window.BaseDataManager.tier_data(3,1);
+              break;
+            case 40:
+              tier = window.BaseDataManager.tier_data(4,1);
+              break;
+            default:
+          }
+          return tier;
+        })(),
+        player_level:_.get(temp1,'5'), // ��ҵȼ�
+        hero_show_total:+_.get(temp1,'6'), // ���Ӣ���ܳ���
+        win_play:+_.get(temp1,'7'), // ���Ӣ��ʤ��
+        win_point:_.get(temp1,'8'), // ʤ��
+        play_total:_.get(temp1,'9'), // ��ұ������ܳ���
+        rune_jishi:_.get(temp1,'10').split(','),// ��û�ʯ����+��ϵͼ�� 8229,8300
+        last_three_record:_.map(_.split(_.get(temp1,'12'),'&'),(el)=>{
+          let tmp = _.split(el,',');
+          return {
+            irank:+_.get(tmp,'0'),// �Ծ�����
+            date:_.get(tmp,'1'), // �Ծ�����
+            time_sec:_.get(tmp,'2'), // �Ծ�ʱ�����룩
+            K:_.get(tmp,'3'),// K
+            D:_.get(tmp,'4'),// D
+            A:_.get(tmp,'5'),// A
+            small:_.get(tmp,'6'),// ������
+            gold:_.get(tmp,'7'),// ׬ȡ�����
+          };
+        }), // ��ҽ�����ս��
+        equipement_myth:_.split(_.get(temp1,'11'),','), // �����װ��id
+        equipement_itemout:_.split(_.get(temp1,'13'),','), // �����ó���װ
+        equipement_core3:_.split(_.get(temp1,'14'),','), // ������������
+        rune_mainperk:_.split(_.get(_.split(_.get(temp1,'15'),'&'),'0'),','), // �����ϵ����
+        rune_viceperk:_.split(_.get(_.split(_.get(temp1,'15'),'&'),'1'),','), // ��ø�ϵ����
+        skill:_.split(_.get(temp1,'16'),','), // ����ٻ�ʦ����
+      };
+      tmp_data.showrate = +(tmp_data.hero_show_total / tmp_data.play_total * 100).toFixed(2); // �ǳ���
+      tmp_data.winrate = +(tmp_data.win_play / tmp_data.hero_show_total * 100).toFixed(2); // ʤ��
+      return tmp_data;
+    });
+    data._update = _.get(result,'dtstatdate') ? (()=>{
+      let dtstatdate = _.get(result,'dtstatdate');
+      return dtstatdate.substr(0,4)+'-'+dtstatdate.substr(4,2)+'-'+dtstatdate.substr(6,2);
+    })() : _.get(_.split(_.get(res,'update'),' '),'0');
+    return data;
+  },
+
+  // ��Ӣ��ר��-����ۺ���Ϣ  await this.$store.dispatch('getCompetitivenessByPlayer',{areaId,playerId});
+  async getCompetitivenessByPlayer({ commit },{areaId,playerId}) {
+    let res = null;
+    let data = {};
+    res = await window.BaseFuncLib.recursionRque(window.baseRequest.getCompetitivenessByPlayer,{areaId,playerId},'data.result');
+    if(!_.get(res,'result')) return null;
+    let result = JSON.parse(_.get(res,'result'));
+    let hero_list = await store.dispatch('getHeroList');
+
+    data._rData = {
+      // ͷ��
+      avatar:`https://down.qq.com/lolapp/lol/summoner/profileicon/${_.get(result,'profile_icon_id')}.jpg`,
+      nickname:Util.charset.Base64.decode(_.get(result,'itemp1'),"utf8"), // ����ǳ�
+      // ��λ��0�����ߡ�5����ʦ��6����ʦ
+      tier:(function () {
+        let tier = '';
+        switch (+_.get(result, 'tier')) {
+          case 0:
+            tier = window.BaseDataManager.tier_data(0);
+            break;
+          case 5:
+            tier = window.BaseDataManager.tier_data(7);
+            break;
+          case 6:
+            tier = window.BaseDataManager.tier_data(6);
+            break;
+          default:
+        }
+        return tier;
+      })(),
+      // ��ҳ���Ӣ�ۣ�ר��ֵǰ����
+      hero_top3:_.map(_.split( _.get(result, 'championid'),','),(el,idx)=>{
+        let tmp = _.split(el,':');
+        return {
+          irank:(idx+1), // ר��ֵ����
+          heroId:_.get(tmp,'0'), // Ӣ��id
+          hero_data: _.find(hero_list,{heroId:''+_.get(tmp,'0')}), // Ӣ������
+          mastery:Math.ceil(+_.get(_.split(_.get(tmp,'1'),'_'),'0')), // ר��ֵ
+          winrate:Math.ceil(+_.get(_.split(_.get(tmp,'1'),'_'),'1')), // ʤ��
+        }
+      }),
+      mode_id:_.get(result, 'gamequeueconfigid'),// ģʽ 420����˫��ģʽ
+      mode:_.find(window.BaseDataManager.game_queue_config,{id:_.get(result, 'gamequeueconfigid')}),
+      wincnt:+_.get(result, 'wincnt'),// ��20��ʤ����
+      falescnt:+_.get(result, 'falescnt'),// ��20��������
+      // item.player_info.wincnt / (item.player_info.wincnt + item.player_info.falescnt
+      // showrate
+      winrate_20:+((+_.get(result, 'wincnt') / (+_.get(result, 'wincnt') + +_.get(result, 'falescnt')))*100).toFixed(2),//��20��ʤ��
+      playcnt_20:+(+_.get(result, 'wincnt') + +_.get(result, 'falescnt')),//��20��
+      // ��20��KDA
+      KDA:_.map(_.split(_.get(result, 'kda'),';'),el=>{
+        let tmp = _.split(el,',');
+        let K = +_.get(tmp,'0');
+        let D = +_.get(tmp,'1');
+        let A = +_.get(tmp,'2');
+        return {
+          average:+(D>0 ? (K+A)/D : K+A).toFixed(1), // KDAƽ��ֵ
+          K:K,
+          D:D,
+          A:A
+        }
+      }),
+      // 20��KDAƽ��ֵ
+      kda_average:(function () {
+        let kda = 0;
+        let list = _.split(_.get(result, 'kda'),';');
+        _.forEach(list,el=>{
+          // ɱ��(Kill)����(Death)����(Assist)
+          // ��ɱ+����/ �� X 3
+          // (K+A)/ D
+          let tmp = _.split(el,',');
+          let K = +_.get(tmp,'0');
+          let D = +_.get(tmp,'1');
+          let A = +_.get(tmp,'2');
+          kda += D>0 ? (K+A)/D : K+A;
+        });
+        return (kda / list.length).toFixed(1)
+      })(),
+      // ��20��Ӣ��
+      championdetails:_.map(_.split( _.get(result, 'championdetails'),','),(el,idx)=>{
+        let tmp = _.split(el,':');
+        return {
+          heroId:_.get(tmp,'0'), // Ӣ��id
+          play:_.get(tmp,'1'), // ��Ӧ����
+        }
+      }),
+      // ��20��λ��
+      lanedetails:(()=>{
+        const lanes = _.map(_.split( _.get(result, 'lanedetails'),','),(el,idx)=>{
+          let tmp = _.split(el,':');
+          return {
+            lane: _.get(tmp,'0'),
+            play: +_.get(tmp,'1'), // ��Ӧ����
+          };
+        })
+        let sum = 0;
+        _.forEach(lanes,(el)=>{
+          sum+=el.play;
+        });
+        let lanedetails = [];
+        _.forEach(lanes,(el)=>{
+          const lane = _.find(_.cloneDeep(window.BaseDataManager.hero_pos),{type:el.lane});
+          if(lane){
+            lane.play = el.play;
+            lane.rate = (el.play / sum * 100).toFixed(2);
+            lanedetails.push(lane)
+          }else{
+            lanedetails.push({
+              type: el.lane,
+              name: "����",
+              icon: "",
+              play: el.play,
+              rate: (el.play / sum * 100).toFixed(2),
+            })
+          }
+        });
+        return _.orderBy(lanedetails,['play'],['desc']);
+      })(),
+      // ��50��ս��
+      recorddetails:_.map(_.split(_.get(result,'recorddetails'),'#'),(item)=>{
+        let temp = _.split(item,'_');
+        // console.log(_.get(temp,'14'))
+        return {
+          irank:+_.get(temp,'0'), // ��������
+          play_result:_.get(temp,'1') === "true", // �Ծֽ��
+          rune_mainperk:_.split(_.get(_.split(_.get(temp,'2'),'&'),'0'),','), // ��ϵ����
+          rune_viceperk:_.split(_.get(_.split(_.get(temp,'2'),'&'),'1'),','), // ��ϵ����
+          rune_jishi:_.split(_.get(temp,'3'),','),// ��ʯ����+��ϵͼ�� 8229,8300
+          skill:_.split(_.get(temp,'4'),','), // �ٻ�ʦ����
+          equipement:_.split(_.get(temp,'5'),','), // ����װ��
+          KDA:_.map(_.split(_.get(temp, '6'),';'),el=>{
+            let tmp = _.split(el,',');
+            let K = +_.get(tmp,'0');
+            let D = +_.get(tmp,'1');
+            let A = +_.get(tmp,'2');
+            return {
+              average:+(D>0 ? (K+A)/D : K+A).toFixed(1), // KDAƽ��ֵ
+              K:K,
+              D:D,
+              A:A
+            }
+          }),
+          // KDAƽ��ֵ
+          kda_average:(function () {
+            let kda = 0;
+            let list = _.split(_.get(temp, '6'),';');
+            _.forEach(list,el=>{
+              // ɱ��(Kill)����(Death)����(Assist)
+              // ��ɱ+����/ �� X 3
+              // (K+A)/ D
+              let tmp = _.split(el,',');
+              let K = +_.get(tmp,'0');
+              let D = +_.get(tmp,'1');
+              let A = +_.get(tmp,'2');
+              kda += D>0 ? (K+A)/D : K+A;
+            });
+            return (kda / list.length).toFixed(1)
+          })(),
+          small:+_.get(temp,'7'), // ��ɱС����
+          gold:+_.get(temp,'8'), // ׬ȡ�����
+          time_sec:+_.get(temp,'9'), // �Ծ�ʱ��
+          time: (()=>{
+            let m  =   Math.floor(+_.get(temp,'9')/60);
+            let s  =   +_.get(temp,'9')%60;
+            return (m<10?'0'+m:m)+':'+(s<10?'0'+s:s);
+          })(),
+          date:_.get(temp,'10'), // �Ծ�����
+          output:+_.get(temp,'11'), // ����˺�
+          gameid:_.get(temp,'12'), // �Ծ�id
+          // player:_.get(temp,'13'), // ��Ա��Ϣ
+          //��Ա��Ϣ
+          player_list:_.map(_.split(_.get(temp,'13'),';'),(team)=>{
+            return _.map(_.split(team,'&'),(player)=>{
+              let tmp = _.split(player,',');
+              return {
+                id:_.get(tmp,'0'), // ��Աid
+                name:Util.charset.Base64.decode(_.get(tmp,'1'),"utf8"), // ��Ա����
+                head_id:_.get(tmp,'2'), // ͷ��id
+                avatar:'https://down.qq.com/lolapp/lol/summoner/profileicon/'+_.get(tmp,'2')+'.jpg',
+              }
+            })
+          }),
+          hero_level:_.get(temp,'14'),// Ӣ�۵ȼ�
+          mode_id:_.get(temp,'15'), // �Ծ�ģʽ
+          mode:_.find(window.BaseDataManager.game_queue_config,{id:_.get(temp,'15')}),
+          hero_id:_.get(temp,'16'), // Ӣ��id
+          hero_data: _.find(hero_list,{heroId:''+_.get(temp,'16')}), // Ӣ������
+        };
+      })
+    };
+    // console.log('getCompetitivenessByPlayer+'+playerId,data._rData)
+
+
+
+    data._update = _.get(result,'dtstatdate') ? (()=>{
+      let dtstatdate = _.get(result,'dtstatdate');
+      return dtstatdate.substr(0,4)+'-'+dtstatdate.substr(4,2)+'-'+dtstatdate.substr(6,2);
+    })() : _.get(_.split(_.get(res,'update'),' '),'0');
+    console.log('�ۺ���Ϣ:',data)
+    return data;
+  },
+
+  // ��Ӣ��ר��-���Ӣ��ս��  await this.$store.dispatch('getCompetitivenessPlayerMatchHero',{areaId,playerId});
+  async getCompetitivenessPlayerMatchHero({ commit },{areaId,playerId}) {
+    let res = null;
+    let data = {};
+    res = await window.BaseFuncLib.recursionRque(window.baseRequest.getCompetitivenessPlayerMatchHero,{areaId,playerId},'data.result');
+    if(!_.get(res,'result')) return null;
+    let result = JSON.parse(_.get(res,'result'));
+    let hero_list = await store.dispatch('getHeroList');
+    data._rData = {
+      // ͷ��
+      avatar:`https://down.qq.com/lolapp/lol/summoner/profileicon/${_.get(result,'profile_icon_id')}.jpg`,
+      // nickname:Util.charset.Base64.decode(_.get(result,'itemp1'),"utf8"), // ����ǳ�
+      nickname:_.get(result,'itemp1'), // ����ǳ�
+      // ��λ��0�����ߡ�5����ʦ��6����ʦ
+      tier:(function () {
+        let tier = '';
+        switch (+_.get(result, 'tier')) {
+          case 0:
+            tier = window.BaseDataManager.tier_data(0);
+            break;
+          case 5:
+            tier = window.BaseDataManager.tier_data(7);
+            break;
+          case 6:
+            tier = window.BaseDataManager.tier_data(6);
+            break;
+          default:
+        }
+        return tier;
+      })(),
+      // ��ҳ���Ӣ�ۣ�ר��ֵǰ����
+      hero_top3:_.map(_.split( _.get(result, 'championid'),','),(el,idx)=>{
+        let tmp = _.split(el,':');
+        return {
+          irank:(idx+1), // ר��ֵ����
+          heroId:_.get(tmp,'0'), // Ӣ��id
+          hero_data: _.find(hero_list,{heroId:''+_.get(tmp,'0')}), // Ӣ������
+          mastery:Math.ceil(+_.get(tmp,'1')), // ר��ֵ
+        }
+      }),
+      // ��50��ս��
+      championdetails:_.map(_.split(_.get(result,'championdetails'),'&'),(item)=>{
+        let temp = _.split(item,'_');
+        return {
+          irank:+_.get(_.split(_.get(temp,'0'),':'),'0'), // ��������
+          mastery:Math.ceil(+_.get(_.split(_.get(temp,'0'),':'),'1')), // ר��ֵ
+          heroId:_.get(temp,'1'), // Ӣ��id
+          hero_data: _.find(hero_list,{heroId:''+_.get(temp,'1')}), // Ӣ������
+          wincnt:+_.get(temp,'2'), // Ӣ��ʤ����
+          showcnt:+_.get(temp,'3'), // Ӣ���ܳ���
+          winrate:+_.get(temp,'4') * 100, // Ӣ��ʤ��
+          KDA:_.map(_.split(_.get(temp, '5'),';'),el=>{
+            let tmp = _.split(el,',');
+            return {
+              K:+_.get(tmp,'0'),
+              D:+_.get(tmp,'1'),
+              A:+_.get(tmp,'2')
+            }
+          }),
+          // KDAƽ��ֵ
+          kda_average:(function () {
+            let kda = 0;
+            let list = _.split(_.get(temp, '5'),';');
+            _.forEach(list,el=>{
+              // ɱ��(Kill)����(Death)����(Assist)
+              // ��ɱ+����/ �� X 3
+              // (K+A)/ D
+              let tmp = _.split(el,',');
+              let K = +_.get(tmp,'0');
+              let D = +_.get(tmp,'1');
+              let A = +_.get(tmp,'2');
+              kda += D>0 ? (K+A)/D : K+A;
+            });
+            return (kda / list.length).toFixed(1)
+          })(),
+          gold:window.BaseFuncLib.toPriceFormat(+_.get(temp,'6')), // ׬ȡ�����
+          kill:+_.get(temp,'7'), // ����ɱ��
+          death:+_.get(temp,'8'), // ���������
+          output:window.BaseFuncLib.toPriceFormat(+_.get(temp,'9')), // ��������˺�
+          injury:window.BaseFuncLib.toPriceFormat(+_.get(temp,'10')), // ���������˺�
+        };
+      })
+    };
+
+    data._update = _.get(result,'dtstatdate') ? (()=>{
+      let dtstatdate = _.get(result,'dtstatdate');
+      return dtstatdate.substr(0,4)+'-'+dtstatdate.substr(4,2)+'-'+dtstatdate.substr(6,2);
+    })() : _.get(_.split(_.get(res,'update'),' '),'0');
+    return data;
+  },
+
+  // ��Ӣ��ר��-������ҶԾ�ϸ��  await this.$store.dispatch('getCompetitivenessPlayerVSDetail',{gameid});
+  async getCompetitivenessPlayerVSDetail({ commit },{gameid}) {
+    let hero_list = await store.dispatch('getHeroList');
+    let res = null;
+    let data = {};
+    res = await window.BaseFuncLib.recursionRque(window.baseRequest.getCompetitivenessPlayerVSDetail,{gameid},'data.result');
+
+    if(!_.get(res,'result')) return null;
+    let result = JSON.parse(_.get(res,'result'));
+    data._rData = _.map(_.split(_.get(result,'recorddetails'),'#'),(item)=>{
+      // 5bqf54mp6YCa6YGT_3152_20_8100,9923,8126,8136,8106&8300,8345,8347&5005,5008,5002_8300,9923_4,14_3864,3155,6693,6695,3111,3814_11,12,13_2.0_24986_0.1351
+      let temp = _.split(item,'_');
+      console.log(123555,temp)
+      return {
+        nickname:Util.charset.Base64.decode(_.get(temp,'0'),"utf8"), // ����ǳ�
+        // ͷ��
+        avatar:`https://down.qq.com/lolapp/lol/summoner/profileicon/${_.get(temp,'1')}.jpg`,
+        // ��λ��0�����ߡ�5����ʦ��6����ʦ
+        tier:(function () {
+          const tier = _.split(_.get(temp, '2'),'');
+          return window.BaseDataManager.tier_data(tier[0],tier[1])
+        })(),
+        //����
+        // rune_detail:(function () {
+        //   let rune = _.split(_.get(temp, '3'),'&');
+        //   return {
+        //     rune_mainperk:_.get(rune,'0').split(','),// ��ϵ����ͼ��,��ϵ����1,��ϵ����2,��ϵ����3,��ϵ����4
+        //     rune_viceperk:_.get(rune,'1').split(','),// ��ϵ����ͼ��,��ϵ����1,��ϵ����2
+        //     rune_miniperk:_.get(rune,'2').split(','),// miniϵ��,����1,����2,����3 ������û�з��أ�
+        //   }
+        // })(),
+        //����
+        ...(function () {
+          let rune = _.split(_.get(temp, '3'),'&');
+          return {
+            rune_mainperk:_.get(rune,'0').split(','),// ��ϵ����ͼ��,��ϵ����1,��ϵ����2,��ϵ����3,��ϵ����4
+            rune_viceperk:_.get(rune,'1').split(','),// ��ϵ����ͼ��,��ϵ����1,��ϵ����2
+            rune_miniperk:_.get(rune,'2').split(','),// miniϵ��,����1,����2,����3 ������û�з��أ�
+          }
+        })(),
+        //��ʯ����+��ϵͼ��+������Ƭ
+        rune_jishi:_.get(temp,'4').split(','),
+        //�ٻ�ʦ����
+        skill:_.get(temp,'5').split(','),
+        equipement:_.split(_.get(temp,'6'),','),
+        // ����װ��
+        KDA:_.map(_.split(_.get(temp, '7'),';'),el=>{
+          let tmp = _.split(el,',');
+          let K = +_.get(tmp,'0');
+          let D = +_.get(tmp,'1');
+          let A = +_.get(tmp,'2');
+          return {
+            average:+(D>0 ? (K+A)/D : K+A).toFixed(1), // KDAƽ��ֵ
+            K:K,
+            D:D,
+            A:A
+          }
+        }),
+        // KDAƽ��ֵ
+        kda_average:(function () {
+          let kda = 0;
+          let list = _.split(_.get(temp, '7'),';');
+          _.forEach(list,el=>{
+            // ɱ��(Kill)����(Death)����(Assist)
+            // ��ɱ+����/ �� X 3
+            // (K+A)/ D
+            let tmp = _.split(el,',');
+            let K = +_.get(tmp,'0');
+            let D = +_.get(tmp,'1');
+            let A = +_.get(tmp,'2');
+            kda += D>0 ? (K+A)/D : K+A;
+          });
+          return (kda / list.length).toFixed(1)
+        })(),
+        damage_rate:_.get(temp,'8'), // ս��� һ��û�м�%��չʾϰ��
+        output:+_.get(temp,'9'), // ��Ӣ���˺�
+        output_rate:(+_.get(temp,'10') * 100).toFixed(2), // ���ռ��
+        hero_id:_.get(temp,'11'), // Ӣ��id 11
+        hero_data: _.find(hero_list,{heroId:''+_.get(temp,'11')}), // Ӣ������ 11
+        hero_level:_.get(temp,'12'),// Ӣ�۵ȼ� 12
+        mode_id:_.get(temp,'13'), // �Ծ�ģʽid 13
+        mode:_.find(window.BaseDataManager.game_queue_config,{id:_.get(temp,'13')}),//�Ծ���Ϣ 13
+        player_id:_.get(temp,'14') //��ҽ�ɫid 14
+      };
+    });
+
+    data._update = _.get(result,'dtstatdate') ? (()=>{
+      let dtstatdate = _.get(result,'dtstatdate');
+      return dtstatdate.substr(0,4)+'-'+dtstatdate.substr(4,2)+'-'+dtstatdate.substr(6,2);
+    })() : _.get(_.split(_.get(res,'update'),' '),'0');
+    return data;
+  },
+
+};
+
+
+
+/********* VUEX ״̬���� start *********/
+const store = new Vuex.Store({
+  state,
+  mutations,
+  actions
+});
+/********* VUEX ״̬���� end *********/
+
+
+/********* ��¼̬���� start *********/
+window.LoginFunc = {
+  areaCookieKey: '_LoginFunc_',
+  init: function () {
+    milo.ready(function () {
+      need("biz.login", function (LoginManager) {
+        LoginManager.checkLogin(function (userInfo) {
+              store.commit('setLoginState', {_state:true, userInfo:userInfo});
+              var areaCookieKey = 'area' + LoginManager.getUserUin();
+              if ("qc" == milo.cookie.get("acctype")) {
+                  areaCookieKey = 'area' + milo.cookie.get('openid');
+              }
+              var cookieValue = milo.cookie.get(areaCookieKey);
+              //��¼�Ұ󶨴���
+              if (cookieValue) {
+                  var areaInfo = cookieValue.split('-');
+                  console.log(areaInfo)
+                  store.commit('setPlayerNickname', areaInfo[1]);
+                  store.commit('setPlayerArea', areaInfo[0]);
+                  store.commit('setAreaId', areaInfo[2]);
+                  this.getPlayerInfo(Number(areaInfo[2]));
+              } else if (LoginManager.getUserUin() && !cookieValue) {
+                  //��¼δ�󶨴���
+                  // this.changeArea();
+              }
+        }.bind(this), function () {
+          //δ��¼
+        }.bind(this));
+        // LoginManager.checkLogin(function (userInfo) {
+        //   // LoginManager.getUserFace(function (data) {
+        //   //   store.commit('setPlayerUserFace', data.userFace);
+        //   // });
+        //   store.commit('setLoginState', {_state:true, userInfo:userInfo});
+        //   var areaCookieKey = 'area' + LoginManager.getUserUin();
+        //   var cookieValue = milo.cookie.get(areaCookieKey);
+        //   //��¼�Ұ󶨴���
+        //   if (cookieValue) {
+        //     var areaInfo = cookieValue.split('-');
+        //     console.log(areaInfo)
+        //     store.commit('setPlayerNickname', areaInfo[1]);
+        //     store.commit('setPlayerArea', areaInfo[0]);
+        //     store.commit('setAreaId', areaInfo[2]);
+        //     this.getPlayerInfo(Number(areaInfo[2]));
+        //   } else if (LoginManager.getUserUin() && !cookieValue) {
+        //     //��¼δ�󶨴���
+        //     // this.changeArea();
+        //   }
+        //
+        // }.bind(this), function () {
+        //   // store.commit('setLoginState', {_state:false, userInfo:null});
+        //   //δ��¼
+        //   console.log('δ��¼')
+        // }.bind(this));
+
+      }.bind(this));
+
+    }.bind(this));
+  },
+  login: function () {
+    need("biz.login", function (LoginManager) {
+      LoginManager.init({
+        needReloadPage: false
+      });
+      window.act.login()
+        // window.act.login(function (res) {
+        // this.init();
+      // }.bind(this));
+    }.bind(this));
+    return false;
+  },
+  logout: function () {
+    need("biz.login", function (LoginManager) {
+        window.act.logout(function () {
+            store.commit('setPlayerNickname', null);
+            store.commit('setPlayerArea', null);
+            store.commit('setPlayerUserFace', null);
+            store.commit('setLoginState', {_state:false, userInfo:null});
+            milo.cookie.set(this.areaCookieKey, '');
+        });
+        location.reload();
+      // LoginManager.logout(function () {
+      //   store.commit('setPlayerNickname', null);
+      //   store.commit('setPlayerArea', null);
+      //   store.commit('setPlayerUserFace', null);
+      //   store.commit('setLoginState', {_state:false, userInfo:null});
+      //   milo.cookie.set(this.areaCookieKey, '');
+      // }.bind(this));
+    }.bind(this));
+
+    return false;
+  },
+  checkArea:function(){
+    return new Promise(function (resolve, reject) {
+      need("biz.login", function (LoginManager) {
+        var areaCookieKey = 'area' + LoginManager.getUserUin();
+        if ("qc" == milo.cookie.get("acctype")) {
+          areaCookieKey = 'area' + milo.cookie.get('openid');
+        }
+        var cookieValue = milo.cookie.get(areaCookieKey);
+        //��¼�Ұ󶨴���
+        if (cookieValue) {
+          var areaInfo = cookieValue.split('-');
+          store.commit('setPlayerNickname', areaInfo[1]);
+          store.commit('setPlayerArea', areaInfo[0]);
+          this.getPlayerInfo(Number(areaInfo[2]));
+          resolve(areaInfo)
+        } else if (LoginManager.getUserUin() && !cookieValue) {
+          //��¼δ�󶨴���
+          // this.changeArea();
+          reject('��¼δ�󶨴���')
+        } else if (!LoginManager.getUserUin()) {
+          //δ��¼
+          reject('δ��¼')
+        }
+
+      }.bind(this));
+    }.bind(this))
+  },
+  changeArea: function () {
+    need(["biz.roleselector"], function (RoleSelector) {
+      RoleSelector.init({
+        'gameId': 'lol',
+        'submitEvent': function (roleObject) {
+          var iArea = roleObject.submitData['areaid'];
+          var sRoleName = roleObject.submitData['rolename'];
+          var areaCookieKey = "area" + roleObject.submitData['roleid'];
+          var openidKey ="area" + milo.cookie.get('openid');
+          // console.log(roleObject);
+          milo.cookie.set(areaCookieKey, LOLServerSelect.zoneToName(iArea) + '-' + sRoleName + '-' + iArea, false);
+          milo.cookie.set(openidKey, LOLServerSelect.zoneToName(iArea) + '-' + sRoleName + '-' + iArea, false);
+          alert('�����󶨳ɹ�����ǰ�󶨴�����' + LOLServerSelect.zoneToName(iArea) + '��');
+          store.commit('setPlayerNickname', sRoleName);
+          store.commit('setPlayerArea', LOLServerSelect.zoneToName(iArea));
+          store.commit('setAreaId', iArea);
+
+          this.getPlayerInfo(Number(iArea)); //��ȡ�����Ϣ
+        }.bind(this)
+        // 'cancelEvent': function () {
+        //   window.location.href = '//lol.qq.com/guides/index.shtml';
+        // }
+      });
+      RoleSelector.show();
+    }.bind(this));
+  },
+  /** ���������Ϣ�ӿڴ��� */
+  getPlayerInfoTimes: 0,
+  /** ��ȡ�����Ϣ */
+  getPlayerInfo: function (area) {
+    return window.baseRequest.getPlayerInfo(area).then(function (resp) {
+      // resp = {"MobilePlayerInfo":{"msg":{"code":0,"msg":"success","res":{"result":0,"uuid_prifle_list":[{"gender":1,"logo_url":"http://q4.qlogo.cn/g?b=qq\u0026k=bF9CRuXGFd5CPxUQEvfQeA\u0026s=140\u0026t=1474204304","nick":"������;","urltime":0,"uuid":"f0553809-d69f-4711-a791-99429fb4feab"}]}},"status":0},"PlayerBattleSummary":{"msg":{"data":{"item_list":[{"battle_type":1,"last_battle_time":0,"leave_num":1,"lose_num":16,"win_num":11},{"battle_type":2,"last_battle_time":0,"leave_num":0,"lose_num":0,"win_num":19},{"battle_type":6,"last_battle_time":0,"leave_num":0,"lose_num":1,"win_num":0}],"item_num":3},"msg":"","retCode":0},"status":0}}
+
+      if (resp.MobilePlayerInfo.status === 0) {
+        var profile = _.head(resp.MobilePlayerInfo.msg.res.uuid_prifle_list);
+        var logoUrl = profile.logo_url.replace('http://', '//');
+        logoUrl = this.parseLogoUrl(logoUrl);
+        profile && store.commit('setPlayerUserFace', logoUrl);
+        this.getPlayerInfoTimes = 0;
+      } else {
+        this.getPlayerInfoTimes++;
+        if (this.getPlayerInfoTimes < 5){
+          this.getPlayerInfo(area)
+        }else{
+          // this.logout();
+        }
+      }
+      return resp;
+    }.bind(this));
+  },
+  /** �ж�����ͷ���Ƿ���Ҫ�ӳߴ���� */
+  parseLogoUrl: function (o) {
+    let logoSizeParam = '/0';
+    if (typeof (o) === 'string') {
+      if (!this.judgeEndStr(o, logoSizeParam)) {
+        if (o.indexOf('qtl_user') !== -1 || o.indexOf('//p.qpic.cn/qtlinfo') !== -1) {
+          o += logoSizeParam;
+        }
+      }
+      return o;
+    }
+    if (typeof (o) === 'object') {
+      for (let i = 0, j = o.length; i < j; ++i) {
+        let obj = o[i];
+        let logoUrl = obj.logo_url;
+        if (!window.this.judgeEndStr(logoUrl, logoSizeParam)) {
+          if (logoUrl.indexOf('qtl_user') !== -1 || logoUrl.indexOf('//p.qpic.cn/qtlinfo') !== -1) {
+            logoUrl += logoSizeParam;
+          }
+          obj.logo_url = logoUrl;
+        }
+      }
+      return o;
+    }
+  },
+  /** �ж�a�ַ�����β�Ƿ���b�ַ��� */
+  judgeEndStr:function (a, b) {
+    let d = a.length - b.length;
+    return (d >= 0 && a.lastIndexOf(b) === d);
+  }
+};
+/********* ��¼̬���� end *********/
+
+

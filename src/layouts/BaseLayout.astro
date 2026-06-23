@@ -6,7 +6,7 @@ import NatureFall from '../components/NatureFall.vue';
 import '../styles/global.scss';
 import { DEFAULT_THEME, THEME_STORAGE_KEY } from '../config/themes';
 
-const { title, description } = Astro.props;
+const { title, description, fitViewport = false } = Astro.props;
 ---
 
 <!doctype html>
@@ -21,19 +21,40 @@ const { title, description } = Astro.props;
       })();
     </script>
   </head>
-  <body class="flex min-h-screen flex-col">
+  <body class:list={['flex min-h-screen flex-col', fitViewport && 'layout-fit-viewport']}>
     <NatureFall client:load />
     <Header />
     <main class="flex-1">
       <slot />
     </main>
-    <Footer />
+    {!fitViewport && <Footer />}
   </body>
 </html>
 
 <style is:global>
   html {
     scrollbar-gutter: stable;
+  }
+
+  body.layout-fit-viewport {
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+  }
+
+  body.layout-fit-viewport main {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  body.layout-fit-viewport main > * {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
   }
 
   @keyframes theme-glow {

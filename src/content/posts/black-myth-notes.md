@@ -2,7 +2,7 @@
 title: '黑神话：悟空 —— 初体验'
 description: '动作、美术、叙事各擅胜场，记录第一次踏上西行路的心情。'
 pubDate: 2026-06-15
-category: gaming
+category: life
 tags: [动作RPG, 单机, 通关感想]
 ---
 

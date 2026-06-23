@@ -1,0 +1,1248 @@
+"use strict";
+window.baseRequest = {};
+window.BaseDataManager = {
+	hero_job:[
+		{type:'fighter',name:'սʿ'},
+		{type:'mage',name:'��ʦ'},
+		{type:'assassin',name:'�̿�'},
+		{type:'tank',name:'̹��'},
+		{type:'marksman',name:'����'},
+		{type:'support',name:'����'}
+	],
+	hero_pos:[
+		{type:'top',name:'�ϵ�',icon:'icon-pos-top'},
+		{type:'jungle',name:'��Ұ',icon:'icon-pos-jungle'},
+		{type:'mid',name:'��·',icon:'icon-pos-mid'},
+		{type:'bottom',name:'��·',icon:'icon-pos-bot'},
+		{type:'support',name:'����',icon:'icon-pos-sup'},
+		// {type:'free',name:'����Ӣ��'}
+	],
+	equip_class:[
+		{type:'ordinary',name:'��ͨ'},
+		{type:'epic',name:'ʷʫ'},
+		{type:'legend',name:'��˵'},
+		// {type:'myth',name:'��'}
+	],
+	rune_base_data:{
+		"8000":{
+			name:"����",
+			id:"8000",
+			tone:"tone1",
+			icon:"//lol.qq.com/act/a20170926preseason/img/runeBuilder/runes/precision/icon-p-36x36.png"
+		},
+		"8100":{
+			name:"����",
+			id:"8100",
+			tone:"tone2",
+			icon:"//lol.qq.com/act/a20170926preseason/img/runeBuilder/runes/domination/icon-d-36x36.png"
+		},
+		"8200":{
+			name:"����",
+			id:"8200",
+			tone:"tone3",
+			icon:"//lol.qq.com/act/a20170926preseason/img/runeBuilder/runes/sorcery/icon-s-36x36.png"
+		},
+		"8400":{
+			name:"���",
+			id:"8400",
+			tone:"tone4",
+			icon:"//lol.qq.com/act/a20170926preseason/img/runeBuilder/runes/resolve/icon-r-36x36.png"
+		},
+		"8300":{
+			name:"����",
+			id:"8300",
+			tone:"tone5",
+			icon:"//lol.qq.com/act/a20170926preseason/img/runeBuilder/runes/inspiration/icon-i-36x36.png"
+		},
+	},
+	game_queue_config:[ //420����˫�ţ�440��������ţ�450�����Ҷ���700���ھ�������888������ģʽ
+		{id:'420',name:'��˫��'},
+		{id:'440',name:'�������'},
+		// {id:'450',name:'���Ҷ�'},
+		{id:'700',name:'�ھ�����'}
+	],
+	tier_data_config:[ //0:���� ��5����ʦ��6����ʦ��10����ʯ��20������30���ƽ�40��������50����ͭ��80������, 200����������, 311��Ͽ��֮�۲�������
+		{id:'999',name:'ȫ����λ'},
+		{id:'200',name:'��������'},
+		{id:'311',name:'Ͽ��֮�۲�������'},
+		{id:'0',name:'����',icon:'https://down.qq.com/lolapp/lol/rankedicons/Season_2022_Challenger.png'},
+		{id:'5',name:'��ʦ',icon:'https://down.qq.com/lolapp/lol/rankedicons/Season_2022_Grandmaster.png'},
+		{id:'6',name:'��ʦ',icon:'https://down.qq.com/lolapp/lol/rankedicons/Season_2022_Master.png'},
+		{id:'10',name:'��ʯ',icon:'https://down.qq.com/lolapp/lol/rankedicons/Season_2022_Diamond.png'},
+		{id:'15',name:'���',icon:'https://down.qq.com/lolapp/lol/rankedicons/Season_2022_Emerald.png'},
+		{id:'20',name:'����',icon:'https://down.qq.com/lolapp/lol/rankedicons/Season_2022_Platinum.png'},
+		{id:'30',name:'�ƽ�',icon:'https://down.qq.com/lolapp/lol/rankedicons/Season_2022_Gold.png'},
+		{id:'40',name:'����',icon:'https://down.qq.com/lolapp/lol/rankedicons/Season_2022_Silver.png'},
+		{id:'50',name:'��ͭ',icon:'https://down.qq.com/lolapp/lol/rankedicons/Season_2022_Bronze.png'},
+		{id:'80',name:'����',icon:'https://down.qq.com/lolapp/lol/rankedicons/Season_2022_Iron.png'},
+	],
+	tier_data: function(tier,queue,battle_type) {
+		let obj = {};
+		switch (+tier) {
+			case 0:
+				obj.extended_tier = '��ǿ����';
+				obj.extended_tier_url = '//ossweb-img.qq.com/images/lol/space/rank/2019pre/season_2019_challenger.png';
+				break;
+			case 1:
+				obj.extended_tier = '����ʯ';
+				obj.extended_tier_url = '//ossweb-img.qq.com/images/lol/space/rank/2019pre/season_2019_diamond_' + (queue + 1) + '.png';
+				break;
+			case 2:
+				obj.extended_tier = '���󲬽�';
+				obj.extended_tier_url = '//ossweb-img.qq.com/images/lol/space/rank/2019pre/season_2019_platinum_' + (queue + 1) + '.png';
+				break;
+			case 3:
+				obj.extended_tier = '��ҫ�ƽ�';
+				obj.extended_tier_url = '//ossweb-img.qq.com/images/lol/space/rank/2019pre/season_2019_gold_' + (queue + 1) + '.png';
+				break;
+			case 4:
+				obj.extended_tier = '��������';
+				obj.extended_tier_url = '//ossweb-img.qq.com/images/lol/space/rank/2019pre/season_2019_silver_' + (queue + 1) + '.png';
+				break;
+			case 5:
+				obj.extended_tier = 'Ӣ�»�ͭ';
+				obj.extended_tier_url = '//ossweb-img.qq.com/images/lol/space/rank/2019pre/season_2019_bronze_' + (queue + 1) + '.png';
+				break;
+			case 6:
+				obj.extended_tier = '������ʦ';
+				obj.extended_tier_url = '//ossweb-img.qq.com/images/lol/space/rank/2019pre/season_2019_master.png';
+				break;
+			case 7:
+				obj.extended_tier = '������ʦ';
+				obj.extended_tier_url = '//ossweb-img.qq.com/images/lol/space/rank/2019pre/season_2019_grandmaster.png';
+				break;
+			case 8:
+				obj.extended_tier = '���ͺ���';
+				obj.extended_tier_url = '//ossweb-img.qq.com/images/lol/space/rank/2019pre/season_2019_iron_' + (queue + 1) + '.png';
+				break;
+			default:
+				obj.extended_tier = '���޶�λ';
+				obj.extended_tier_url = '//ossweb-img.qq.com/images/lol/space/rank/2019pre/default.png';
+				break;
+		}
+		switch (+queue) {
+			case 0:
+				obj.extended_queue = '��';
+				break;
+			case 1:
+				obj.extended_queue = '��';
+				break;
+			case 2:
+				obj.extended_queue = '��';
+				break;
+			case 3:
+				obj.extended_queue = '��';
+				break;
+			// case 4:
+			//     obj.extended_queue = '��';
+			//     break;
+			default:
+				//���ߡ�������ʦ��������ʦ��û���Ӷ�λ��
+				obj.extended_queue = '';
+				break;
+		}
+		switch (+battle_type) {
+			case 3:
+				obj.extended_battle_type = '�������5v5';
+				break;
+			case 4:
+				obj.extended_battle_type = '��/˫��λ��';
+				break;
+			case 5:
+				obj.extended_battle_type = '�������3v3';
+				break;
+		}
+
+		return obj;
+	},
+};
+
+/********* ��ȡӢ���б� start *********/
+window.baseRequest.getHeroList = async function () {
+	if (baseRequest.getHeroList.cache) return baseRequest.getHeroList.cache;
+	return baseRequest.getHeroList.cache = fetchRequest(`//game.gtimg.cn/images/lol/act/img/js/heroList/hero_list.js?ts=${Date.now() / 600000 >> 0}`).then(function (rs) {
+		return rs.json();
+	}).then(function (rs) {
+		rs.hero = _.values(rs.hero);
+		return rs;
+	}).then(function (rs) {
+		//�滻Ӣ��ͷ��Ϊ����ӦЭ��
+		console.warn('��ȡӢ���б���',rs);
+		_.forEach(rs.hero, function (item) {
+			item.avatar = `//game.gtimg.cn/images/lol/act/img/champion/${item.alias}.png`;
+			// item.skin_base = `//game.gtimg.cn/images/lol/act/img/skinloading/${item.heroId}000.jpg`;
+			item.skin_base = `//game.gtimg.cn/images/lol/act/img/skinloading/${item.instance_id}.jpg`;
+			item.guide_pic = `//game.gtimg.cn/images/lol/act/img/guidetop/guide${item.heroId}000.jpg`;
+			// item.banAudio = _.replace(item.banAudio, 'http://', '//');
+			// item.selectAudio = _.replace(item.selectAudio, 'http://', '//');
+		});
+		// rs.hero = _.orderBy(rs.hero, 'r_order');
+		return rs;
+	}).catch(function (e) {
+		baseRequest.getHeroList.cache = null;
+		return Promise.reject(e);
+	});
+}
+/********* ��ȡӢ���б� end *********/
+
+/********* ����Ӣ�� start *********/
+window.baseRequest.getHeroFree = async function () {
+	if (baseRequest.getHeroFree.cache) return baseRequest.getHeroFree.cache;
+	return baseRequest.getHeroFree.cache = fetchScript(`//lol.qq.com/biz/hero/free.js?ts=${Date.now() / 600000 >> 0}`).then(function () {
+		console.warn('��ȡ����Ӣ���б���',LOLherojs);
+		return Promise.resolve(LOLherojs);
+	}).catch(function (e) {
+		baseRequest.getHeroFree.cache = null;
+		return Promise.reject(e);
+	});
+}
+/********* ����Ӣ�� end *********/
+
+
+/********* ��ȡӢ��վλ start *********/
+window.baseRequest.getHeroListPosition = async function () {
+	if (baseRequest.getHeroListPosition.cache) return baseRequest.getHeroListPosition.cache;
+	return baseRequest.getHeroListPosition.cache = fetchScript(`//lol.qq.com/act/lbp/common/guides/guideschampion_position.js?ts=${Date.now() / 600000 >> 0}`).then(function () {
+		console.warn('��ȡӢ��վλ��',CHAMPION_POSITION);
+		return Promise.resolve(CHAMPION_POSITION);
+	}).catch(function (e) {
+		baseRequest.getHeroListPosition.cache = null;
+		return Promise.reject(e);
+	});
+}
+/********* ��ȡӢ��վλ end *********/
+
+
+/********* ��ȡװ���б� start *********/
+window.baseRequest.getEquipmentList = async function () {
+	if (baseRequest.getEquipmentList.cache) return baseRequest.getEquipmentList.cache;
+	return baseRequest.getEquipmentList.cache = fetchRequest(`//game.gtimg.cn/images/lol/act/img/js/items/items.js?ts=${Date.now() / 600000 >> 0}`).then(function (rs) {
+		return rs.json();
+	}).then(function (rs) {
+		rs.items = _.values(rs.items);
+		return rs;
+	}).then(function (rs) {
+		//�滻Ӣ��ͷ��Ϊ����ӦЭ��
+		console.warn('��ȡװ���б���',rs);
+		_.forEach(rs.items, function (item) {
+			item.iconPath = _.replace(item.iconPath, 'http://', '//');
+			// item.selectAudio = _.replace(item.selectAudio, 'http://', '//');
+		});
+
+		// rs.hero = _.orderBy(rs.hero, 'r_order');
+		return rs;
+	}).catch(function (e) {
+		baseRequest.getEquipmentList.cache = null;
+		return Promise.reject(e);
+	});
+}
+/********* ��ȡװ���б� end *********/
+
+
+/********* ��ȡǿ������ start *********/
+window.baseRequest.getAugmentList = async function () {
+	if (baseRequest.getAugmentList.cache) return baseRequest.getAugmentList.cache;
+	return baseRequest.getAugmentList.cache = fetchRequest(`//game.gtimg.cn/images/lol/act/img/js/arena/augment.js?ts=${Date.now() / 600000 >> 0}`).then(function (rs) {
+		return rs.json();
+	}).then(function (rs) {
+		console.warn('��ȡӢ�������б���',rs);
+		return rs;
+	}).catch(function (e) {
+		baseRequest.getAugmentList.cache = null;
+		return Promise.reject(e);
+	});
+}
+/********* ��ȡǿ������ end *********/
+
+
+/********* ��ȡӢ�������б� start *********/
+window.baseRequest.getHeroRank = async function () {
+	if (baseRequest.getHeroRank.cache) return baseRequest.getHeroRank.cache;
+	return baseRequest.getHeroRank.cache = fetchScript(`//lol.qq.com/act/lbp/common/guides/guideschampion_rank.js?ts=${Date.now() / 600000 >> 0}`).then(function () {
+		console.warn('��ȡӢ�������б���',CHAMPION_RANK);
+		return Promise.resolve(CHAMPION_RANK);
+	}).catch(function (e) {
+		baseRequest.getHeroRank.cache = null;
+		return Promise.reject(e);
+	});
+}
+/********* ��ȡӢ�������б� end *********/
+
+
+/********* ��ȡ�����б� start *********/
+window.baseRequest.getLOLServer = async function () {
+	if (baseRequest.getLOLServer.cache) return baseRequest.getLOLServer.cache;
+	return baseRequest.getLOLServer.cache = fetchScript(`//lol.qq.com/comm-htdocs/js/game_area/lol_server_select.js?ts=${Date.now() / 600000 >> 0}`,'GBK').then(function () {
+		console.warn('��ȡ�����б���',LOLServerSelect);
+		return Promise.resolve(LOLServerSelect);
+	}).catch(function (e) {
+		baseRequest.getLOLServer.cache = null;
+		return Promise.reject(e);
+	});
+}
+/********* ��ȡ�����б� end *********/
+
+
+/********* ��ȡӢ���������� start *********/
+window.baseRequest.getHeroDetail = async function (heroId) {
+	if(!heroId){
+		// throw new Error('��ȡӢ���������ݣ��봫��heroId')
+		console.warn('��ȡӢ���������ݣ��봫��heroId');
+		return Promise.reject('��ȡӢ���������ݣ��봫��heroId');
+	}
+	if (baseRequest.getHeroDetail['cache_'+heroId]) return baseRequest.getHeroDetail['cache_'+heroId];
+	return baseRequest.getHeroDetail['cache_'+heroId] = fetchScript(`//lol.qq.com/act/lbp/common/guides/champDetail/champDetail_${heroId}.js?ts=${Date.now() / 600000 >> 0}`,'GBK').then(function () {
+		console.warn(`��ȡӢ�ۡ�${heroId}���������ݣ�`,window[`CHAMPION_DETAIL_${heroId}`]);
+		return Promise.resolve(window[`CHAMPION_DETAIL_${heroId}`]);
+	}).catch(function (e) {
+		baseRequest.getHeroDetail['cache_'+heroId] = null;
+		return Promise.reject(e);
+	});
+}
+/********* ��ȡ�����б� end *********/
+
+
+
+/********* ��ȡ ��Ӣ����Ϣ|����|Ƥ���� ���� start *********/
+window.baseRequest.getHeroInfo = async function (heroId) {
+	if(!heroId){
+		// throw new Error('��ȡӢ���������ݣ��봫��heroId')
+		console.warn('��ȡ ��Ӣ����Ϣ|����|Ƥ���� ���ݣ��봫��heroId');
+		return Promise.reject('��ȡ ��Ӣ����Ϣ|����|Ƥ���� ���ݣ��봫��heroId');
+	}
+	if (baseRequest.getHeroInfo['cache_'+heroId]) return baseRequest.getHeroInfo['cache_'+heroId];
+	return baseRequest.getHeroInfo['cache_'+heroId] = fetchRequest(`//game.gtimg.cn/images/lol/act/img/js/hero/${heroId}.js?ts=${Date.now() / 600000 >> 0}`).then(function (rs) {
+		return rs.json();
+	}).then(function (rs) {
+		//�滻Ӣ��ͷ��Ϊ����ӦЭ��
+		console.warn(`��ȡ ��${heroId} Ӣ����Ϣ|����|Ƥ���� ���ݣ�`,rs);
+		rs.hero.avatar = `//game.gtimg.cn/images/lol/act/img/champion/${rs.hero.alias}.png`;
+		let baseSkin = _.find(_.get(rs,'skins'),{isBase:'1'})
+		baseSkin || (baseSkin = _.get(rs,'skins.0'))
+		rs.hero.skin_base = _.get(baseSkin,'loadingImg')
+		rs.hero.guide_pic = _.get(baseSkin,'sourceImg')
+		return rs;
+	}).catch(function (e) {
+		baseRequest.getHeroInfo['cache_'+heroId] = null;
+		return Promise.reject(e);
+	});
+}
+/********* ��ȡӢ�� ����Ϣ����|Ƥ���� ���� end *********/
+
+
+/********* ��ȡ����˺���Ϣ start *********/
+window.baseRequest.getPlayerInfo = async function (area) {
+	if(area === undefined || !state.IS_LOGIN_END){
+		console.warn('��ȡ����˺���Ϣ���봫��area��������¼̬');
+		return Promise.reject('��ȡ����˺���Ϣ���봫��area��������¼̬');
+	}
+	if (baseRequest.getPlayerInfo[`cache_uin_${state.userInfo.uin}_area_${area}`]) return baseRequest.getPlayerInfo[`cache_uin_${state.userInfo.uin}_area_${area}`];
+	return baseRequest.getPlayerInfo[`cache_uin_${state.userInfo.uin}_area_${area}`] = fetchRequest(
+		// `//lol.ams.game.qq.com/lol/autocms/v1/transit/LOL/LOLWeb/Official/MobilePlayerInfo,PlayerBattleSummary?use=zm,uid,acc&callback=PlayerInfo_uin_${state.userInfo.uin}_area_${area}&area=${area}`,
+		`//lol.ams.game.qq.com/lol/autocms/v1/transit/LOL/LOLWeb/Official/MobilePlayerInfo,PlayerBattleSummary?use=zm,uid,acc&area=${area}`,
+		{
+		method: 'GET',
+		mode: 'cors',
+		credentials: 'include',
+	}).then(function (rs) {
+		// console.log(222,window[`PlayerInfo_uin_${state.userInfo.uin}_area_${area}`]);
+		// if(window[`PlayerInfo_uin_${state.userInfo.uin}_area_${area}`]){
+		// 	return window[`PlayerInfo_uin_${state.userInfo.uin}_area_${area}`];
+		// }else{
+		// 	return null;
+		// }
+		return rs.json();
+	}).then(function (rs) {
+		console.warn(`��ȡ �˺ţ�${state.userInfo.uin}��������${area} ����˺���Ϣ:`,rs);
+		return rs;
+	}).catch(function (e) {
+		baseRequest.getPlayerInfo[`cache_uin_${state.userInfo.uin}_area_${area}`] = null;
+		return Promise.reject(e);
+	});
+}
+/********* ��ȡ����˺���Ϣ end *********/
+
+
+/********* ��ȡ�����б� start *********/
+window.baseRequest.getRuneList = async function () {
+	if (baseRequest.getRuneList.cache) return baseRequest.getRuneList.cache;
+	return baseRequest.getRuneList.cache = fetchRequest(`//game.gtimg.cn/images/lol/act/img/js/runeList/rune_list.js`).then(function (rs) {3
+		return rs.json();
+	}).then(function (rs) {
+		console.warn('��ȡ�����б�:',rs);
+		// rs.rune = _.values(rs.rune);
+		_.forEach(_.get(rs,'rune'),(rune,key)=>{rune["_key"] = key});
+		return rs;
+	}).catch(function (e) {
+		baseRequest.getRuneList.cache = null;
+		return Promise.reject(e);
+	});
+}
+/********* ��ȡ�����б� end *********/
+
+
+/********* ͬ�����ĵ�WeGame start *********/
+window.baseRequest.pushRuneToWeGame = async function ({sChamId,sMainSel,sSubSel,sMainRune,sSubRune,sMiniRune}) {
+	const apiUrl = `//lol.sw.game.qq.com/lol/lwdcommact/setRune?r1=RUNECFG_RES&sChamId=${sChamId}&sMainSel=${sMainSel}&sSubSel=${sSubSel}&sMainRune=${sMainRune}&sSubRune=${sSubRune}&sMiniRune=${sMiniRune}&ts=${Date.now() / 4000 >> 0}`
+	console.log('ͬ�����ĵ�WeGame Api:',{apiUrl:apiUrl,params:{sChamId,sMainSel,sSubSel,sMainRune,sSubRune,sMiniRune}})
+	return fetchScript(apiUrl).then(function (rs) {
+		console.warn('ͬ�����ĵ�WeGame:',RUNECFG_RES);
+		// rs.rune = _.values(rs.rune);
+		return RUNECFG_RES;
+	}).catch(function (e) {
+		return Promise.reject(e);
+	});
+}
+/********* ͬ�����ĵ�WeGame end *********/
+
+
+/********* ��ȡװ��������Ϣ start *********/
+window.baseRequest.getEquipmentCategory = async function () {
+	if (baseRequest.getEquipmentCategory.cache) return baseRequest.getEquipmentCategory.cache;
+	return baseRequest.getEquipmentCategory.cache = fetchRequest(`//game.gtimg.cn/images/lol/act/img/js/items_ext/items_ext.js`).then(function (rs) {
+		return rs.json();
+	}).then(function (rs) {
+		console.warn('��ȡװ��������Ϣ:',rs);
+		return rs;
+	}).catch(function (e) {
+		baseRequest.getEquipmentCategory.cache = null;
+		return Promise.reject(e);
+	});
+}
+/********* ��ȡװ��������Ϣ end *********/
+
+
+/********* ��ȡװ���Ķ���Ϣ start *********/
+window.baseRequest.getEquipmentUpdate = async function () {
+	if (baseRequest.getEquipmentUpdate.cache) return baseRequest.getEquipmentUpdate.cache;
+	//����
+	// return baseRequest.getEquipmentUpdate.cache = fetchRequest(`//mlolpre.qt.qq.com/go/database/varcache_equipment_update`).then(function (rs) {
+	return baseRequest.getEquipmentUpdate.cache = fetchRequest(`https://mlol.qt.qq.com/go/database/varcache_equipment_update`).then(function (rs) {
+		return rs.json();
+	}).then(function (rs) {
+		// change_type
+		const type = {
+			"": "����",
+			"1": "��װ��",
+			"2": "����",
+			"5": "��ͨ",
+			"6": "��ǿ",
+			"7": "����",
+		}
+		_.forEach(_.get(rs,'data.list'),(item,key)=>{
+			item.change_tag = _.get(type,_.get(item,'change_type'))
+		});
+		console.warn('��ȡװ���Ķ���Ϣ:',rs);
+		return rs;
+	}).catch(function (e) {
+		baseRequest.getEquipmentUpdate.cache = null;
+		return Promise.reject(e);
+	});
+}
+/********* ��ȡװ���Ķ���Ϣ end *********/
+
+
+/********* ��ȡ�ٻ�ʦ�������� start *********/
+window.baseRequest.getSummonerSkill = async function () {
+	if (baseRequest.getSummonerSkill.cache) return baseRequest.getSummonerSkill.cache;
+	return baseRequest.getSummonerSkill.cache = fetchRequest(`//game.gtimg.cn/images/lol/act/img/js/summonerskillList/summonerskill_list.js`).then(function (rs) {
+		return rs.json();
+	}).then(function (rs) {
+		_.forEach(_.get(rs,'summonerskill'),(item,key)=>{
+			item["_key"]=key;
+			item.icon = _.replace(item.icon, 'http://', '//');
+		});
+		return rs;
+	}).then(function (rs) {
+		console.warn('��ȡ�ٻ�ʦ��������:',rs);
+		return rs;
+	}).catch(function (e) {
+		baseRequest.getSummonerSkill.cache = null;
+		return Promise.reject(e);
+	});
+}
+/********* ��ȡ�ٻ�ʦ�������� end *********/
+
+
+/********* ��ȡͼ������ start *********/
+window.baseRequest.getHeroTrend = async function () {
+	if (baseRequest.getHeroTrend.cache) return baseRequest.getHeroTrend.cache;
+	return baseRequest.getHeroTrend.cache = fetchScript(`//lol.qq.com/act/lbp/common/guides/champDetail_trend.js?ts=${Date.now() / 600000 >> 0}`,'GBK').then(function () {
+		console.warn(`��ȡͼ�����ݣ�`,window[`CHAMPION_DETAIL_TREND`]);
+		return Promise.resolve(window[`CHAMPION_DETAIL_TREND`]);
+	}).catch(function (e) {
+		baseRequest.getHeroTrend.cache = null;
+		return Promise.reject(e);
+	});
+}
+/********* ��ȡͼ������ end *********/
+
+
+/********* ��ȡKOL����ͼ����ʱ�� ��ȡ����ͼ�� start *********/
+window.baseRequest.getTrendTime = async function () {
+	if (baseRequest.getTrendTime.cache) return baseRequest.getTrendTime.cache;
+	return baseRequest.getTrendTime.cache = fetchRequest(`//apps.game.qq.com/cmc/cross?serviceId=3&source=glzx&filter=tag&tagids=1334&typeids=1`).then(function (rs) {
+		return rs.json();
+	}).then(function (rs) {
+		console.warn('��ȡKOL����ͼ����ʱ�� ��ȡ����ͼ��:',rs);
+		return rs;
+	}).catch(function (e) {
+		baseRequest.getTrendTime.cache = null;
+		return Promise.reject(e);
+	});
+};
+/********* ��ȡKOL����ͼ����ʱ�� ��ȡ����ͼ�� end *********/
+
+
+/********* ��ȡGICPӢ�۱�ǩ���� start *********/
+window.baseRequest.getGicpTagChan = async function () {
+	if (baseRequest.getGicpTagChan.cache) return baseRequest.getGicpTagChan.cache;
+	return baseRequest.getGicpTagChan.cache = fetchScript(`https://lol.qq.com/act/lbp/common/guides/gicpTagChan.js?ts=${Date.now() / 600000 >> 0}`,'GBK').then(function () {
+		console.warn(`��ȡGICPӢ�۱�ǩ���ݣ�`,GICP_TAG_CHAN);
+		return Promise.resolve(GICP_TAG_CHAN);
+	}).catch(function (e) {
+		baseRequest.getGicpTagChan.cache = null;
+		return Promise.reject(e);
+	});
+};
+/********* ��ȡGICPӢ�۱�ǩ���� end *********/
+
+
+/*********
+ * ��ȡ������Ѷ start
+ * ������logic=or
+ https://apps.game.qq.com/cmc/cross?serviceId=166&source=LR_H5wsq&tagids=114662,116052&logic=or&typeids=1,2&start=0&limit=50
+ ������logic=and
+ https://apps.game.qq.com/cmc/cross?serviceId=166&source=LR_H5wsq&tagids=114662,116052&logic=and&typeids=1,2&start=0&limit=50
+ * @param tagids ������Ҫʹ�õı�ǩID����ȷ��������ı�ǩ����
+ * @param typeids ��������ȡ���������ͣ�1Ϊͼ�ġ�2Ϊ��Ƶ��
+ * @param start ��ʼλ��
+ * @param pagesize ��ҳ��С
+ * ������logic=or
+ * ������logic=and
+ * @returns {Promise<*>}
+ *********/
+window.baseRequest.getCross = async function ({tagids, typeids, start, pagesize},extend) {
+	const cache = 'cache_'+tagids+typeids+start+pagesize+(extend?JSON.stringify(extend):'');
+	if (baseRequest.getGicpTagChan[cache]) return baseRequest.getGicpTagChan[cache];
+	if(!tagids || !typeids){
+		console.warn('��ȡ������Ѷ���봫��tagids��������Ҫʹ�õı�ǩID����ȷ��������ı�ǩ������typeids����������ȡ���������ͣ�1Ϊͼ�ġ�2Ϊ��Ƶ��');
+		return Promise.reject('��ȡ������Ѷ���봫��tagids��������Ҫʹ�õı�ǩID����ȷ��������ı�ǩ������typeids����������ȡ���������ͣ�1Ϊͼ�ġ�2Ϊ��Ƶ��');
+	}
+	pagesize || (pagesize=4);
+	start || (start=0);
+
+	var params_extend = '';
+	if(extend){
+		_.forEach(extend,(v,k)=>{
+			params_extend += '&'+k+'='+v
+		})
+	}
+
+	return baseRequest.getGicpTagChan[cache] = fetchRequest(`//apps.game.qq.com/cmc/cross?serviceId=3&source=gw_101glzx&tagids=${tagids}&typeids=${typeids}&limit=${pagesize}&start=${start}${params_extend}`).then(function (rs) {
+		return rs.json();
+	}).then(function (rs) {
+		_.forEach(_.get(rs,'data.items'), function (item) {
+			item.sCreaterHeader = _.replace(item.sCreaterHeader, 'http://', '//');
+			item.avatar = _.replace(item.avatar, 'http://', '//');
+		});
+		return rs;
+	}).then(function (rs) {
+		console.warn('��ȡ������Ѷ:',rs);
+		return rs;
+	}).catch(function (e) {
+		baseRequest.getGicpTagChan[cache] = null;
+		return Promise.reject(e);
+	});
+};
+/********* ��ȡ������Ѷ end *********/
+
+
+/********* ��ȡ�������� start *********/
+window.baseRequest.getCrossContentInfo = async function (docid) {
+	if(!docid){
+		console.warn('��ȡ��������,�봫��docid');
+		return Promise.reject('��ȡ��������,�봫��docid');
+	}
+	if (baseRequest.getCrossContentInfo['cache_'+docid]) return baseRequest.getCrossContentInfo['cache_'+docid];
+	return baseRequest.getCrossContentInfo['cache_'+docid] = fetchRequest(`//apps.game.qq.com/cmc/zmMcnContentInfo?r0=json&source=web_pc&type=0&docid=${docid}`).then(function (rs) {
+		return rs.json();
+	}).then(function (rs) {
+		console.warn('��ȡ��������:',rs);
+		return rs;
+	}).catch(function (e) {
+		baseRequest.getCrossContentInfo['cache_'+docid] = null;
+		return Promise.reject(e);
+	});
+};
+/********* ��ȡ�������� end *********/
+
+
+/********* �Ķ����ϱ� start *********/
+window.baseRequest.updateTotalPlay = async function (docid,source) {
+	if(!docid){
+		console.warn('�Ķ����ϱ�,�봫��docid');
+		return Promise.reject('�Ķ����ϱ�,�봫��docid');
+	}
+	source || (source = 3);//1:���¹���  2:LCU  3:��������  4:lcu��Ƶ����  6:wegame
+	return fetchRequest(`//apps.game.qq.com/wmp/v3.1/?p0=3&p1=updateTotalPlay&p3=2&p5=1&source=${source}&docid=${docid}`).then(function (rs) {
+		console.warn('�Ķ����ϱ�:',rs);
+		return rs.json;
+	}).catch(function (e) {
+		return Promise.reject(e);
+	});
+};
+/********* �Ķ����ϱ� end *********/
+
+
+/********* ��ȡ���µ���״̬ start *********/
+window.baseRequest.getCrossLikeNew = async function (docid) {
+	if(!docid){
+		console.warn('��ȡ���µ���״̬,�봫��docid');
+		return Promise.reject('��ȡ���µ���״̬,�봫��docid');
+	}
+	return fetchRequest(`//apps.game.qq.com/cmc/likeNew?r0=json&type=1&biz=3&action=get&docid=${docid}`,{
+		method: 'GET',
+		mode: 'cors',
+		credentials: 'include',
+	}).then(function (rs) {
+		return rs.json();
+	}).then(function (rs) {
+		console.warn('��ȡ���µ���״̬:',rs);
+		return rs;
+	}).catch(function (e) {
+		return Promise.reject(e);
+	});
+};
+/********* ��ȡ���µ���״̬ end *********/
+
+
+/*********
+ *
+ * ���µ��� start
+ * @param action add������   del��ȡ������
+ * @param docid ����docid
+ *
+ * *********/
+window.baseRequest.pushCrossZan = async function (docid,actionDdd) {
+	if(!docid){
+		console.warn('���µ���,�봫��docid');
+		return Promise.reject('���µ���,�봫��docid');
+	}
+	const action = actionDdd ? 'add' : 'del';
+	return fetchRequest(`//apps.game.qq.com/cmc/likeNew?r0=json&type=1&biz=3&action=${action}&docid=${docid}`,{
+		method: 'GET',
+		mode: 'cors',
+		credentials: 'include',
+	}).then(function (rs) {
+		return rs.json();
+	}).then(function (rs) {
+		console.warn('���µ���:',rs);
+		return rs;
+	}).catch(function (e) {
+		return Promise.reject(e);
+	});
+};
+/********* ���µ��� end *********/
+
+
+/*********
+ *
+ * ��ȡ���������б� start
+ * @param authorid ����id
+ *
+ * *********/
+window.baseRequest.getAuthorContentList = async function (authorid) {
+	if(!authorid){
+		console.warn('��ȡ���������б�,�봫��authorid');
+		return Promise.reject('��ȡ���������б�,�봫��authorid');
+	}
+	return fetchRequest(`//apps.game.qq.com/cmc/zmMcnFocusAuthorContentList?r0=json&source=web_pc&num=4&page=1&authorid=${authorid}`).then(function (rs) {
+		return rs.json();
+	}).then(function (rs) {
+		console.warn('��ȡ���������б�:',rs);
+		return rs;
+	}).catch(function (e) {
+		return Promise.reject(e);
+	});
+};
+/********* ��ȡ���������б� end *********/
+
+
+/*********
+ *
+ * ��ȡ��������Ƽ��б� start
+ * @param docid ����id
+ *
+ * *********/
+window.baseRequest.getRecommendedRelated = async function (docid) {
+	if(!docid){
+		console.warn('��ȡ��������Ƽ��б�,�봫��docid');
+		return Promise.reject('��ȡ��������Ƽ��б�,�봫��docid');
+	}
+	return fetchRequest(`//apps.game.qq.com/cmc/zmMcnRecommendedRelatedPcNewsList?r0=json&uin=1&reset=0&num=3&docid=${docid}`).then(function (rs) {
+		return rs.json();
+	}).then(function (rs) {
+		console.warn('��ȡ��������Ƽ��б�:',rs);
+		return rs;
+	}).catch(function (e) {
+		return Promise.reject(e);
+	});
+};
+/********* ��ȡ��������Ƽ��б� end *********/
+
+
+/********* ��ȡ�������а� ������ start *********/
+window.baseRequest.getScoreRank = async function ({area,page,pagesize,uname}) {
+	if(!area){
+		console.warn('��ȡ�������а�,�봫��area');
+		return Promise.reject('��ȡ�������а�,�봫��area');
+	}
+	page || (page = 1);
+	pagesize || (pagesize = 10);
+	let api = `//lol.ams.game.qq.com/lol/autocms/v1/transit/LOL/Meta/Public/wegameScoreRank?area_id=${area}&pnum=${page}&psize=${pagesize}`;
+	if(uname){
+		api = `//lol.ams.game.qq.com/lol/autocms/v1/transit/LOL/Meta/Public/wegameRankSearch?area_id=${area}&uname=${encodeURI(uname)}`;
+	}
+	return fetchRequest(api).then(function (rs) {
+		return rs.json();
+	}).then(function (rs) {
+		console.warn('��ȡ�������а�:',rs);
+		return rs;
+	}).catch(function (e) {
+		return Promise.reject(e);
+	});
+};
+/********* ��ȡ�������а� ������ end *********/
+
+
+
+
+
+/********* ��ȡ���˫�� start *********/
+window.baseRequest.getRankDouble = async function ({heroId,tier,lane1,lane2,pagesize,pageindex,backDate}) {
+	// if(!heroId){
+	// 	// throw new Error('��ȡӢ���������ݣ��봫��heroId')
+	// 	console.warn('��ȡ���˫�ţ��봫��heroId');
+	// 	return Promise.reject('��ȡ���˫�ţ��봫��heroId');
+	// }
+	// tier tier	bigint	��λ	"��λ����:  0:���� ��5����ʦ��6����ʦ��10����ʯ��20������30���ƽ�40��������50����ͭ��80������ 200���������� 311��Ͽ��֮�۲�������"
+	let date = backDate ? backDate : window.BaseFuncLib.pushDay(new Date(),-3).split(' ')[0].replace(new RegExp("-","g"), '');
+	date = +date < 20210719 ? '20210719' : date;
+	tier || (tier='200');
+	lane1 || (lane1='bottom');
+	lane2 || (lane2='support');
+	pagesize || (pagesize='10');
+	pageindex || (pageindex='0'); //��ҳҳ�루��0��ʼ��
+	const params = `?championid=${heroId}&date=${date}&tier=${tier}&lane1=${lane1}&lane2=${lane2}&pagesize=${pagesize}&pageindex=${pageindex}`;
+	// return Promise.resolve({
+	// 	"code": 0,
+	// 	"data": [{"championid1": "91", "championid2": "41", "doublewincnt": 29, "doublewinrate": 0.8529, "irank": 1, "iwinrate1": 0.54, "iwinrate2": 0.5189, "lane1": "all", "lane2": "all"}, {"championid1": "41", "championid2": "91", "doublewincnt": 29, "doublewinrate": 0.8529, "irank": 2, "iwinrate1": 0.5189, "iwinrate2": 0.54, "lane1": "all", "lane2": "all"}, {"championid1": "75", "championid2": "104", "doublewincnt": 37, "doublewinrate": 0.7708, "irank": 3, "iwinrate1": 0.5268, "iwinrate2": 0.4941, "lane1": "all", "lane2": "all"}, {"championid1": "104", "championid2": "75", "doublewincnt": 37, "doublewinrate": 0.7708, "irank": 4, "iwinrate1": 0.4941, "iwinrate2": 0.5268, "lane1": "all", "lane2": "all"}, {"championid1": "12", "championid2": "1", "doublewincnt": 32, "doublewinrate": 0.7442, "irank": 5, "iwinrate1": 0.5277, "iwinrate2": 0.5607, "lane1": "all", "lane2": "all"}],
+	// 	"message": "success"
+	// })
+	// return Promise.resolve({
+	// 	"code": 0,
+	// 	"data": [{"championid1": "163", "championid2": "145", "doublewincnt": 36, "doublewinrate": 0.7826, "irank": 1, "iwinrate1": 0.6133, "iwinrate2": 0.5921, "lane1": "jungle", "lane2": "all"}, {"championid1": "163", "championid2": "412", "doublewincnt": 24, "doublewinrate": 0.6667, "irank": 5, "iwinrate1": 0.6133, "iwinrate2": 0.6348, "lane1": "jungle", "lane2": "all"}, {"championid1": "163", "championid2": "360", "doublewincnt": 21, "doublewinrate": 0.6563, "irank": 7, "iwinrate1": 0.6133, "iwinrate2": 0.5701, "lane1": "jungle", "lane2": "all"}],
+	// 	"message": "success"
+	// })
+	return fetchRequest(`https://faas-6831.native.qq.com/faas/6831/1371/getRankDouble${params}`,{
+		method: 'GET',
+		// mode: 'cors',
+		credentials: 'include',
+	}).then(function (rs) {
+		return rs.json();
+	}).then(function (rs) {
+		//�滻Ӣ��ͷ��Ϊ����ӦЭ��
+		console.warn(`��ȡ ��${heroId} ���˫�ţ�`,rs);
+		// rs.hero.avatar = `//game.gtimg.cn/images/lol/act/img/champion/${rs.hero.alias}.png`;
+		// rs.hero.skin_base = `//game.gtimg.cn/images/lol/act/img/skinloading/${rs.hero.heroId}000.jpg`;
+		return rs;
+	}).catch(function (e) {
+		return Promise.reject(e);
+	});
+}
+
+// window.baseRequest.getRankDouble('3').then(res=>{
+// 	console.log(1111,res)
+// }).catch(err=>(console.error(1111,err)))
+/********* ��ȡ���˫�� end *********/
+
+
+
+/********* ������������ start *********/
+/**
+ *
+ dtstatdate	string	����	���磺20210517
+ time_type	string	��������	1���գ�7���ܣ�30����
+ tier	bigint	��λ	"��λ����:
+ 0:���� ��5����ʦ��6����ʦ��10����ʯ��20������30���ƽ�40��������50����ͭ��80������
+ 200����������
+ 311��Ͽ��֮�۲�������"
+ championid	string	Ӣ��ID	666������Ӣ��
+ championdetails	string	Ӣ������	"Ӣ�����飺ÿ��Ӣ����Ϣ��#������
+ ����Ӣ����ϸ��Ϣ��_������
+ �����ҷֱ���������Ӣ��id��kda������Ӣ���˺����������ˡ��������ơ�����ʱ�����������á�������ɱ�������������ǳ��ʡ�������"
+
+ �ɹ�����ֵ����	"
+ ""HttpStatus"": 200,
+ ""code"": 0,
+ ""data"": {
+		""_fieldValues"": {
+			""R6692"": ""{\""championdetails\"":\""71_1_3.0859_18985_13224_950_1525_10459_7_8_0.004_0.0332\""}""
+		},
+		""result"": ""{\""championdetails\"":\""71_1_3.0859_18985_13224_950_1525_10459_7_8_0.004_0.0332\""}""
+	},
+ ""datas"": {
+		""1061022"": {
+			""code"": 0,
+				""data"": {
+				""_fieldValues"": {
+					""R6692"": ""{\""championdetails\"":\""71_1_3.0859_18985_13224_950_1525_10459_7_8_0.004_0.0332\""}""
+				},
+				""result"": ""{\""championdetails\"":\""71_1_3.0859_18985_13224_950_1525_10459_7_8_0.004_0.0332\""}""
+			},
+			""message"": """"
+		}
+	},
+ ""message"": """"
+ }"
+ "�쳣����ֵ������
+ "	"{
+		""HttpStatus"": 200,
+			""code"": 5000000001,
+			""data"": null,
+			""datas"": {
+			""100"": {
+				""code"": 5000000001,
+					""data"": null,
+					""message"": ""arg null is required""
+			}
+		},
+		""message"": ""arg null is required""
+	}"
+
+ eg:
+ window.baseRequest.getRankFieldAverage({heroId:'3',time_type:'7',tier:'200'}).then(res=>{
+		console.log(1111,res)
+	}).catch(err=>(console.error(1111,err)))
+
+ */
+window.baseRequest.getRankFieldAverage = async function ({heroId,time_type,tier,backDate}) {
+
+	// const date = new Date();
+	// const year = date.getFullYear();
+	// const month = date.getMonth()<9?`0${date.getMonth()+1}`:date.getMonth()+1;
+	// const day = date.getDate()<10?`0${date.getDate()}`:date.getDate();
+	// const dtstatdate = `${year}${month}${day}`;
+	const date = backDate ? backDate : window.BaseFuncLib.pushDay(new Date(),-3).split(' ')[0].replace(new RegExp("-","g"), '');
+	heroId || (heroId = '666');
+	tier || (tier = '200');
+	time_type || (time_type = '30');
+
+	// const destination = "x1-6833"; //Ŀ�����
+	// const source = "odper"; //���÷�
+	// const timestamp = Math.round(new Date().getTime()/1000); //��ǰ������Unix��
+	// const nonce = window.BaseFuncLib.randomString(6); //����Ϊ6������ַ���
+	// const secret = "ea06b6b5-b7a2-11eb-9d09-d25c626c6dbf"; //���÷�����������Կ
+	return fetchRequest(`https://x1-6833.native.qq.com/x1/6833/1061022&0ce227?championid=${heroId}&time_type=${time_type}&tier=${tier}&dtstatdate=${date}`,{
+		method: 'GET',
+		// mode: 'cors',
+		credentials: 'include',
+		// headers:{
+		// 	"Content-Type":"application/json;charset=UTF-8",
+		// 	"x-odp-destination-service": destination,
+		// 	"x-odp-source-service": source,
+		// 	"x-odp-timestamp": timestamp,
+		// 	"x-odp-nonce": nonce,
+		// 	"x-odp-signature":hex_md5(destination,',',source,',',timestamp,',',nonce,',',secret).toLowerCase(),
+		// }
+	}).then(function (rs) {
+		return rs.json();
+	}).then(function (rs) {
+		//�滻Ӣ��ͷ��Ϊ����ӦЭ��
+		console.warn(`��ȡ ��${heroId} �����������У�`,rs);
+		return rs;
+	}).catch(function (e) {
+		return Promise.reject(e);
+	});
+}
+// window.baseRequest.getRankFieldAverage({heroId:'3',time_type:'7',tier:'200'}).then(res=>{
+// 	console.log(1111,res)
+// }).catch(err=>(console.error(1111,err)));
+/********* ������������ end *********/
+
+
+
+/********* Ӣ���������� start *********/
+/**
+ *
+ * Ͽ����λ
+ *
+ �ֶ�	����	�ֶ�����	�ֶ�����
+ dtstatdate	string	����	���磺20210517
+ championid	string	Ӣ��ID	666������Ӣ��
+ gamequeueconfigid	string	ģʽ	420����˫�ţ�440��������ţ�450�����Ҷ���700���ھ�������888������ģʽ
+ tier	bigint	��λ	"��λ����:
+ 0:���� ��5����ʦ��6����ʦ��10����ʯ��20������30���ƽ�40��������50����ͭ��80������
+ 200����������
+ 311��Ͽ��֮�۲�������"
+ lane	string	λ��	all������λ��
+ ijob	string	Ӣ��ְҵ	all������ְҵ
+ championdetails	string	Ӣ������	"Ӣ�����飺ÿ��Ӣ����Ϣ��#������
+ ����Ӣ����ϸ��Ϣ��_�����������ҷֱ���������Ӣ��id������ʤ�ʡ������ʡ�ѡ�ʡ�Ӣ�ۿ������顢���˫�����飻
+ ����0~4
+ 0��T0��1��T1��2��T2��3��T3��4��T4��
+ Ӣ�ۿ������飺������Ϣ�ŵ�[]�У�����Ӣ��id��ʤ��֮����Ӣ�Ķ���,�ָ���ÿ������Ӣ����Ϣ֮����&��������Ӣ�ۿ�������Ϊ���򷵻�[]��
+ �磺[64,0.6667&80,1.0]
+ ����64��80�ǿ���Ӣ��id��0.6667��1.0�ǿ���ʤ�ʣ�
+ ���˫�����飺������Ϣ�ŵ�[]�У�Ӣ��id��˫��ʤ��֮����Ӣ�Ķ���,�ָ���ÿ��˫��Ӣ����Ϣ֮����&��������Ӣ�����˫��TOP3����Ϊ���򷵻�[]��
+ �磺[99,0.6061&141,0.5714&245,0.5595]
+ ����99��141��245�����˫��ǰ����Ӣ��id��0.6061��0.5714��0.5595�ֱ���TOP3��˫��ʤ��"
+
+ *
+ */
+window.baseRequest.getRankOverview = async function ({heroId,lane,ijob,gamequeueconfigid,tier,backDate}) {
+	// const date = new Date();
+	// const year = date.getFullYear();
+	// const month = date.getMonth()<9?`0${date.getMonth()+1}`:date.getMonth()+1;
+	// const day = date.getDate()<10?`0${date.getDate()}`:date.getDate();
+	// const dtstatdate = `${year}${month}${day}`;
+	// const date = backDate ? backDate : window.BaseFuncLib.pushDay(new Date(),-1).split(' ')[0].replace(new RegExp("-","g"), '');
+	heroId || (heroId = '666');
+	lane || (lane = 'all');
+	tier || (tier = '200');
+	ijob || (ijob = 'all');
+	gamequeueconfigid || (gamequeueconfigid = '888');
+
+	return new Promise(function (resolve,reject) {
+		var flow_1064309 = {
+			actId: '663338',
+			token: '9e84fe',
+			sData: {
+				championid: heroId, // Ӣ��id
+				lane: lane, // Ӣ��λ��
+				ijob: ijob, // Ӣ��ְҵ
+				gamequeueconfigid: gamequeueconfigid, // ģʽid
+				tier: tier, // ��λ
+			},
+			success: function(res){
+				resolve(res);
+			},
+			fail: function(res){
+				reject(res);
+				console.warn(res);
+			}
+		}
+		try{
+			Milo.emit(flow_1064309);
+		}catch (e) {
+			console.log(e)
+		}
+		flow_1064309 = null;
+	})
+}
+//2024-08-16��milo�ӿڱ��ݣ������ԭ�ӿڣ�
+window.baseRequest.getRankOverview_old = async function ({heroId,lane,ijob,gamequeueconfigid,tier,backDate}) {
+	// const date = new Date();
+	// const year = date.getFullYear();
+	// const month = date.getMonth()<9?`0${date.getMonth()+1}`:date.getMonth()+1;
+	// const day = date.getDate()<10?`0${date.getDate()}`:date.getDate();
+	// const dtstatdate = `${year}${month}${day}`;
+	const date = backDate ? backDate : window.BaseFuncLib.pushDay(new Date(),-3).split(' ')[0].replace(new RegExp("-","g"), '');
+	heroId || (heroId = '666');
+	lane || (lane = 'all');
+	tier || (tier = '200');
+	ijob || (ijob = 'all');
+	gamequeueconfigid || (gamequeueconfigid = '888');
+	return fetchRequest(`https://x1-6833.native.qq.com/x1/6833/1061021&3af49f?championid=${heroId}&lane=${lane}&ijob=${ijob}&dtstatdate=${date}&gamequeueconfigid=${gamequeueconfigid}&tier=${tier}`,{
+		method: 'GET',
+		// mode: 'cors',
+		credentials: 'include',
+	}).then(function (rs) {
+		return rs.json();
+	}).then(function (rs) {
+		//�滻Ӣ��ͷ��Ϊ����ӦЭ��
+		// console.warn(`��ȡ ��${heroId} Ӣ������������`,rs);
+		return rs;
+	}).catch(function (e) {
+		return Promise.reject(e);
+	});
+	// return fetchRequest(`https://x1-6833.native.qq.com/x1/6833/1061021&3af49f?championid=${heroId}&lane=${lane}&ijob=${ijob}&dtstatdate=${date}&gamequeueconfigid=${gamequeueconfigid}&tier=${tier}`,{
+	// 	method: 'GET',
+	// 	// mode: 'cors',
+	// 	credentials: 'include',
+	// }).then(function (rs) {
+	// 	return rs.json();
+	// }).then(function (rs) {
+	// 	//�滻Ӣ��ͷ��Ϊ����ӦЭ��
+	// 	console.warn(`��ȡ ��${heroId} Ӣ������������`,rs);
+	// 	return rs;
+	// }).catch(function (e) {
+	// 	return Promise.reject(e);
+	// });
+}
+/********* Ӣ���������� end *********/
+
+
+
+
+/********* ���Ҷ������� start *********/
+window.baseRequest.getRankFight = async function ({backDate}) {
+	if(!backDate){return Promise.reject('dtstatdate����Ϊ��');}
+	// backDate = '20211019'
+	if (baseRequest.getRankFight['cache_'+backDate]) return baseRequest.getRankFight['cache_'+backDate];
+	var callback = window['getRankFightCallback'] = function (rs) {
+		console.log('���Ҷ�������',rs);
+		return Promise.resolve(rs);
+	}
+	return baseRequest.getRankFight['cache_'+backDate] = fetchScript(`https://lol.sw.game.qq.com/lol/lwdcommact/a20211015billboard/a20211015api/fight?dtstatdate=${backDate}&callback=getRankFightCallback&ts=${Date.now() / 600000 >> 0}`,'GBK','getRankFightCallback').then(function (rs) {
+		// console.warn('��ȡ���Ҷ������񵥣�',LWDFramework_Swoole);
+		return Promise.resolve(rs);
+	}).catch(function (e) {
+		baseRequest.getRankFight['cache_'+backDate] = null;
+		return Promise.reject(e);
+	});
+
+
+	// return new Promise((resolve, reject) => {
+	// 	var callback = window['getRankFightCallback'] = function (rs) {
+	// 		console.log('���Ҷ�������',rs);
+	// 		resolve(rs);
+	// 	}
+	// 	return baseRequest.getRankFight['cache_'+backDate] = fetchScript(`https://lol.sw.game.qq.com/lol/lwdcommact/a20211015billboard/a20211015api/fight?dtstatdate=${backDate}&callback=getRankFightCallback&ts=${Date.now() / 600000 >> 0}`,'GBK','getRankFightCallback').then(function (rs) {
+	// 		// console.warn('��ȡ���Ҷ������񵥣�',LWDFramework_Swoole);
+	// 		// return Promise.resolve(rs);
+	// 	}).catch(function (e) {
+	// 		baseRequest.getRankFight['cache_'+backDate] = null;
+	// 		reject(e);
+	// 	});
+	// });
+}
+/********* ���Ҷ������� end *********/
+
+
+/********* ���Ҷ���Ӣ������ start *********/
+window.baseRequest.getFighthero = async function ({backDate,championid}) {
+	if(!backDate){return Promise.reject('dtstatdate����Ϊ��');}
+	if(!championid){return Promise.reject('championid����Ϊ��');}
+	// backDate = '20211019'
+	if (baseRequest.getFighthero['cache_'+championid+'_'+backDate]) return baseRequest.getFighthero['cache_'+championid+'_'+backDate];
+	return baseRequest.getFighthero['cache_'+championid+'_'+backDate] = fetchScript(`https://lol.sw.game.qq.com/lol/lwdcommact/a20211015billboard/a20211015api/fighthero?dtstatdate=${backDate}&championid=${championid}&callback=getFightheroCallback&ts=${Date.now() / 600000 >> 0}`,'GBK','getFightheroCallback').then(function (rs) {
+		// console.warn('��ȡ���Ҷ������񵥣�',LWDFramework_Swoole);
+		return Promise.resolve(rs);
+	}).catch(function (e) {
+		baseRequest.getFighthero['cache_'+championid+'_'+backDate] = null;
+		return Promise.reject(e);
+	});
+}
+/********* ���Ҷ���Ӣ������ end *********/
+
+
+/********* �����Ǿ�������Ӣ������ start *********/
+window.baseRequest.getArenahero = async function ({championid}) {
+	if(!championid){return Promise.reject('championid����Ϊ��');}
+
+	// var apiUrl = `https://lol.sw.game.qq.com/lol/lwdcommact/a20211015billboard/a20211015api/fighthero?championid=${championid}&callback=getFightheroCallback&ts=${Date.now() / 600000 >> 0}`
+	var apiUrl = `data-js/getArenahero.js`
+
+	if (baseRequest.getArenahero['cache_'+championid]) return baseRequest.getArenahero['cache_'+championid];
+	return baseRequest.getArenahero['cache_'+championid] = fetchScript(apiUrl,'GBK','getFightheroCallback').then(function (rs) {
+		console.warn(111,'�����Ǿ�������Ӣ�����ݣ�',rs);
+		return Promise.resolve(rs);
+	}).catch(function (e) {
+		console.warn(222,'�����Ǿ�������Ӣ�����ݣ�',e);
+
+		baseRequest.getArenahero['cache_'+championid] = null;
+		return Promise.reject(e);
+	}).finally(function (ee) {
+		console.warn(33,'�����Ǿ�������Ӣ�����ݣ�',ee);
+	});
+}
+/********* �����Ǿ�������Ӣ������ end *********/
+
+/*********
+ * �����Ǿ��������� start
+ * date(����) 20230815
+ * championid(Ӣ��id)
+ * role(��λ)
+ * item(�����ֶ�) winrate��ʤ�ʣ�Ϊ�գ� userate���ǳ���
+ * order(����ʽ) asc����/desc����
+ * *********/
+window.baseRequest.getArenaRank = async function ({backDate,championid,role,item,order='desc'}) {
+	if(!backDate){return Promise.reject('dtstatdate����Ϊ��');}
+	// ������Ϊ��userate��ʱ�ᰴ�ǳ����������롾winrate����Ϊ��ʱ��ʤ������
+	// ���磺winrate
+	switch (item) {
+		case 'iratepct':
+			item = 'userate'
+		break;
+		case 'douwinrate':
+			item = 'winrate'
+		break;
+	}
+
+	// var apiUrl = `https://mlol.qt.qq.com/go/mlol_webapis/odp_proxy/get1700_rank_double?date=${backDate}&championid=${championid}&role1=${role}&item=${item}&order=${order}&ts=${Date.now() / 600000 >> 0}`
+	var apiUrl = `data-js/getArenaRank.json`
+
+	return fetchRequest(apiUrl,'GBK').then(function (rs) {
+		return rs.json();
+	}).then(function (rs) {
+		//�滻Ӣ��ͷ��Ϊ����ӦЭ��
+		console.warn(`��ȡ ��${championid} �����Ǿ��������У�`,rs);
+		return rs;
+	}).catch(function (e) {
+		return Promise.reject(e);
+	});
+}
+/********* �����Ǿ��������� end *********/
+
+/********* ���꾺����˫������ start *********/
+window.baseRequest.getArenaRankDouble = async function ({backDate,championid,role1,role2,pagesize,pageindex,item,order}) {
+	if(!backDate){return Promise.reject('dtstatdate����Ϊ��');}
+	!pagesize && (pagesize = 10);
+	!pageindex && (pageindex = 0);
+	return fetchRequest(`https://mlol.qt.qq.com/go/mlol_webapis/odp_proxy/get1700_rank_double?date=${backDate}&championid=${championid}&role1=${role1}&role2=${role2}&pagesize=${pagesize}&pageindex=${pageindex}&item=${item}&order=${order}&ts=${Date.now() / 600000 >> 0}`,'GBK').then(function (rs) {
+		return rs.json();
+	}).then(function (rs) {
+		//�滻Ӣ��ͷ��Ϊ����ӦЭ��
+		console.warn(`��ȡ ��${championid} ���꾺������`,rs);
+		// rs.hero.avatar = `//game.gtimg.cn/images/lol/act/img/champion/${rs.hero.alias}.png`;
+		// rs.hero.skin_base = `//game.gtimg.cn/images/lol/act/img/skinloading/${rs.hero.heroId}000.jpg`;
+		return rs;
+	}).catch(function (e) {
+		return Promise.reject(e);
+	});
+}
+/********* ���꾺����˫������ end *********/
+
+/********* �ۺ�ר��ֵ���� start *********/
+window.baseRequest.getCompetitivenessRanking = async function ({areaId,backDate,page=1}) {
+	if(!backDate){return Promise.reject('dtstatdate����Ϊ��');}
+	// backDate = '20211019'
+	if (baseRequest.getCompetitivenessRanking['cache_'+areaId+'_'+backDate]) return baseRequest.getCompetitivenessRanking['cache_'+areaId+'_'+backDate];
+
+	return new Promise((resolve, reject) => {
+
+		var callback = window['getCompetitivenessRanking'] = function (rs) {
+			console.log('�ۺ�ר��ֵ����',rs);
+			resolve(rs);
+		}
+		baseRequest.getCompetitivenessRanking['cache_'+areaId+'_'+backDate] = fetchScript(`https://lol.sw.game.qq.com/lol/lwdcommact/a20211015billboard/a20211015api/ranking?callback=getCompetitivenessRanking&iworldid=${areaId}&dtstatdate=${backDate}&vitemp1=${page}&tier=255&ts=${Date.now() / 600000 >> 0}`,'GBK').then(function (rs) {
+
+			// return Promise.resolve(rs);
+			// try {
+			// 	console.warn('�ۺ�ר��ֵ������',_.cloneDeep(LWDFramework_Swoole));
+			// 	return Promise.resolve(_.cloneDeep(LWDFramework_Swoole));
+			// }catch (err){
+			// 	return Promise.reject('�ۺ�ר��ֵ����Error');
+			// }
+		}).catch(function (e) {
+			baseRequest.getCompetitivenessRanking['cache_'+areaId+'_'+backDate] = null;
+			reject(e);
+		});
+	});
+}
+/********* �ۺ�ר��ֵ���� end *********/
+
+
+/********* ��Ӣ��ר��-����б� start *********/
+window.baseRequest.getCompetitivenessHeroPlayer = async function ({areaId,heroId,backDate}) {
+	const cache_key = 'cache_'+areaId+'_'+heroId+'_'+backDate;
+	if(baseRequest.getCompetitivenessHeroPlayer[cache_key]) return baseRequest.getCompetitivenessHeroPlayer[cache_key];
+	return baseRequest.getCompetitivenessHeroPlayer[cache_key] = fetchRequest(`https://x1-7091.native.qq.com/x1/7091/1074321&a685c9?championid=${heroId}&iworldid=${areaId}&dtstatdate=${backDate}`,{
+		method: 'GET',
+		// mode: 'cors',
+		// credentials: 'include',
+	}).then(function (rs) {
+		return rs.json();
+	}).then(function (rs) {
+		//�滻Ӣ��ͷ��Ϊ����ӦЭ��
+		// console.warn(`��Ӣ��ר��-${cache_key}-����б���`,rs);
+		return rs;
+	}).catch(function (e) {
+		baseRequest.getCompetitivenessHeroPlayer[cache_key] = null;
+		return Promise.reject(e);
+	});
+};
+/********* ��Ӣ��ר��-����б� end *********/
+
+
+/********* ��Ӣ��ר��-����ۺ���Ϣ start *********/
+window.baseRequest.getCompetitivenessByPlayer = async function ({areaId,playerId,backDate}) {
+	const cache_key = 'cache_'+areaId+'_'+playerId+'_'+backDate;
+	if(baseRequest.getCompetitivenessByPlayer[cache_key]) return baseRequest.getCompetitivenessByPlayer[cache_key];
+	return baseRequest.getCompetitivenessByPlayer[cache_key] = fetchRequest(`https://x1-7091.native.qq.com/x1/7091/1078422&b09af2?summonerid=${playerId}&iworldid=${areaId}&dtstatdate=${backDate}`,{
+		method: 'GET',
+		// mode: 'cors',
+		// credentials: 'include',
+	}).then(function (rs) {
+		return rs.json();
+	}).then(function (rs) {
+		//�滻Ӣ��ͷ��Ϊ����ӦЭ��
+		return rs;
+	}).catch(function (e) {
+		baseRequest.getCompetitivenessByPlayer[cache_key] = null;
+		return Promise.reject(e);
+	});
+};
+
+/********* ��Ӣ��ר��-����ۺ���Ϣ end *********/
+
+
+/********* ��Ӣ��ר��-���Ӣ��ս�� start *********/
+window.baseRequest.getCompetitivenessPlayerMatchHero = async function ({areaId,playerId,backDate}) {
+	const cache_key = 'cache_'+areaId+'_'+playerId+'_'+backDate;
+	if(baseRequest.getCompetitivenessPlayerMatchHero[cache_key]) return baseRequest.getCompetitivenessPlayerMatchHero[cache_key];
+	return baseRequest.getCompetitivenessPlayerMatchHero[cache_key] = fetchRequest(`https://x1-7091.native.qq.com/x1/7091/1085008&e8c137?summonerid=${playerId}&iworldid=${areaId}&dtstatdate=${backDate}`,{
+		method: 'GET',
+		// mode: 'cors',
+		// credentials: 'include',
+	}).then(function (rs) {
+		return rs.json();
+	}).then(function (rs) {
+		return rs;
+	}).catch(function (e) {
+		baseRequest.getCompetitivenessPlayerMatchHero[cache_key] = null;
+		return Promise.reject(e);
+	});
+};
+
+/********* ��Ӣ��ר��-���Ӣ��ս�� end *********/
+
+
+/********* ��Ӣ��ר��-������ҶԾ�ϸ�� start *********/
+window.baseRequest.getCompetitivenessPlayerVSDetail = async function ({gameid,backDate}) {
+	// const destination = "x1-8394"; //Ŀ�����
+	// const source = "odper"; //���÷�
+	// const timestamp = Math.round(new Date().getTime()/1000); //��ǰ������Unix��
+	// const nonce = window.BaseFuncLib.randomString(6); //����Ϊ6������ַ���
+	// const secret = "ea06b6b5-b7a2-11eb-9d09-d25c626c6dbf"; //���÷�����������Կ
+	const cache_key = 'cache_'+gameid+'_'+backDate;
+	if(baseRequest.getCompetitivenessPlayerVSDetail[cache_key]) return baseRequest.getCompetitivenessPlayerVSDetail[cache_key];
+	return baseRequest.getCompetitivenessPlayerVSDetail[cache_key] = fetchRequest(`https://x1-8394.native.qq.com/x1/8394/1116557&4a7c5c?gameid=${gameid}&dtstatdate=${backDate}`,{
+	// return baseRequest.getCompetitivenessPlayerVSDetail[cache_key] = fetchRequest(`https://x1-8394.native.qq.com/x1/8394/1116557&4a7c5c?gameid=${gameid}&dtstatdate=20220321`,{
+		method: 'GET',
+		// mode: 'cors',
+		// credentials: 'include',
+		// headers:{
+		// 	"Content-Type":"application/json;charset=UTF-8",
+		// 	"x-odp-destination-service": destination,
+		// 	"x-odp-source-service": source,
+		// 	"x-odp-timestamp": timestamp,
+		// 	"x-odp-nonce": nonce,
+		// 	"x-odp-signature":hex_md5(destination,',',source,',',timestamp,',',nonce,',',secret).toLowerCase(),
+		// }
+	}).then(function (rs) {
+		return rs.json();
+	}).then(function (rs) {
+		// return {"HttpStatus":200,"code":0,"data":{"_fieldValues":{"R7270":"{\"recorddetails\":\"6aqR5riU55qE54yr_4361_13_8400,8439,8446,8444,8242\u00268300,8304,8321\u00265007,5002,5002_8300,8439_14,4_3860,3190,3114,3067,4401,3047_1,4,23_6.0_8772_0.0921#5aW55Ly85pma6Zye6LaK5pma5oSI5rWT_4631_14_8100,8128,8143,8138,8135\u00268200,8233,8236\u00265008,5008,5002_8200,8128_11,4_6691,2421,3814,6694,6695,3111_8,8,14_2.75_27998_0.7019#54i454i4U08=_5067_20_8200,8214,8226,8210,8237\u00268400,8463,8453\u00265008,5008,5002_8400,8214_14,4_3853,1028,2065,3504,6616,3158_2,5,21_4.6_11890_0.2981#UHVjbnfkuL/mtYXlpI/kvp3moqY=_4902_13_8000,8010,9111,9105,8299\u00268400,8473,8453\u00265005,5008,5002_8400,8010_14,4_6630,3066,1028,3075,1057,3047_2,10,14_1.6_22570_0.237#6K6k55yf546p5LiA5LiL5Y+v5Lul5ZCX_29_14_8000,8008,9111,9104,8014\u00268400,8473,8451\u00265005,5008,5002_8400,8008_4,7_3143,6672,3026,3006,4401,6676_18,3,5_7.6667_39320_0.4129#6IO95LiN6IO95bim6ISR5a2Q5ZWK_3795_14_8100,8128,8139,8138,8135\u00268000,8009,8299\u00265008,5008,5002_8000,8128_11,4_3152,1058,3157,3115,3020,3041_9,5,14_4.6_24576_0.258\"}"},"result":"{\"recorddetails\":\"6aqR5riU55qE54yr_4361_13_8400,8439,8446,8444,8242\u00268300,8304,8321\u00265007,5002,5002_8300,8439_14,4_3860,3190,3114,3067,4401,3047_1,4,23_6.0_8772_0.0921#5aW55Ly85pma6Zye6LaK5pma5oSI5rWT_4631_14_8100,8128,8143,8138,8135\u00268200,8233,8236\u00265008,5008,5002_8200,8128_11,4_6691,2421,3814,6694,6695,3111_8,8,14_2.75_27998_0.7019#54i454i4U08=_5067_20_8200,8214,8226,8210,8237\u00268400,8463,8453\u00265008,5008,5002_8400,8214_14,4_3853,1028,2065,3504,6616,3158_2,5,21_4.6_11890_0.2981#UHVjbnfkuL/mtYXlpI/kvp3moqY=_4902_13_8000,8010,9111,9105,8299\u00268400,8473,8453\u00265005,5008,5002_8400,8010_14,4_6630,3066,1028,3075,1057,3047_2,10,14_1.6_22570_0.237#6K6k55yf546p5LiA5LiL5Y+v5Lul5ZCX_29_14_8000,8008,9111,9104,8014\u00268400,8473,8451\u00265005,5008,5002_8400,8008_4,7_3143,6672,3026,3006,4401,6676_18,3,5_7.6667_39320_0.4129#6IO95LiN6IO95bim6ISR5a2Q5ZWK_3795_14_8100,8128,8139,8138,8135\u00268000,8009,8299\u00265008,5008,5002_8000,8128_11,4_3152,1058,3157,3115,3020,3041_9,5,14_4.6_24576_0.258\"}"},"datas":{"1116557":{"code":0,"data":{"_fieldValues":{"R7270":"{\"recorddetails\":\"6aqR5riU55qE54yr_4361_13_8400,8439,8446,8444,8242\u00268300,8304,8321\u00265007,5002,5002_8300,8439_14,4_3860,3190,3114,3067,4401,3047_1,4,23_6.0_8772_0.0921#5aW55Ly85pma6Zye6LaK5pma5oSI5rWT_4631_14_8100,8128,8143,8138,8135\u00268200,8233,8236\u00265008,5008,5002_8200,8128_11,4_6691,2421,3814,6694,6695,3111_8,8,14_2.75_27998_0.7019#54i454i4U08=_5067_20_8200,8214,8226,8210,8237\u00268400,8463,8453\u00265008,5008,5002_8400,8214_14,4_3853,1028,2065,3504,6616,3158_2,5,21_4.6_11890_0.2981#UHVjbnfkuL/mtYXlpI/kvp3moqY=_4902_13_8000,8010,9111,9105,8299\u00268400,8473,8453\u00265005,5008,5002_8400,8010_14,4_6630,3066,1028,3075,1057,3047_2,10,14_1.6_22570_0.237#6K6k55yf546p5LiA5LiL5Y+v5Lul5ZCX_29_14_8000,8008,9111,9104,8014\u00268400,8473,8451\u00265005,5008,5002_8400,8008_4,7_3143,6672,3026,3006,4401,6676_18,3,5_7.6667_39320_0.4129#6IO95LiN6IO95bim6ISR5a2Q5ZWK_3795_14_8100,8128,8139,8138,8135\u00268000,8009,8299\u00265008,5008,5002_8000,8128_11,4_3152,1058,3157,3115,3020,3041_9,5,14_4.6_24576_0.258\"}"},"result":"{\"recorddetails\":\"6aqR5riU55qE54yr_4361_13_8400,8439,8446,8444,8242\u00268300,8304,8321\u00265007,5002,5002_8300,8439_14,4_3860,3190,3114,3067,4401,3047_1,4,23_6.0_8772_0.0921#5aW55Ly85pma6Zye6LaK5pma5oSI5rWT_4631_14_8100,8128,8143,8138,8135\u00268200,8233,8236\u00265008,5008,5002_8200,8128_11,4_6691,2421,3814,6694,6695,3111_8,8,14_2.75_27998_0.7019#54i454i4U08=_5067_20_8200,8214,8226,8210,8237\u00268400,8463,8453\u00265008,5008,5002_8400,8214_14,4_3853,1028,2065,3504,6616,3158_2,5,21_4.6_11890_0.2981#UHVjbnfkuL/mtYXlpI/kvp3moqY=_4902_13_8000,8010,9111,9105,8299\u00268400,8473,8453\u00265005,5008,5002_8400,8010_14,4_6630,3066,1028,3075,1057,3047_2,10,14_1.6_22570_0.237#6K6k55yf546p5LiA5LiL5Y+v5Lul5ZCX_29_14_8000,8008,9111,9104,8014\u00268400,8473,8451\u00265005,5008,5002_8400,8008_4,7_3143,6672,3026,3006,4401,6676_18,3,5_7.6667_39320_0.4129#6IO95LiN6IO95bim6ISR5a2Q5ZWK_3795_14_8100,8128,8139,8138,8135\u00268000,8009,8299\u00265008,5008,5002_8000,8128_11,4_3152,1058,3157,3115,3020,3041_9,5,14_4.6_24576_0.258\"}"},"message":""}},"message":""}
+		return rs;
+	}).catch(function (e) {
+		baseRequest.getCompetitivenessPlayerVSDetail[cache_key] = null;
+		return Promise.reject(e);
+	});
+};
+/********* ��Ӣ��ר��-������ҶԾ�ϸ�� end *********/
+
+// window.BaseFuncLib.recursionRque(window.baseRequest.getCompetitivenessPlayerVSDetail, {gameid:'6137771087'},'data.result').then(res=>{console.log(111222,res)}).catch(err=>{console.log(222111,err)})
+

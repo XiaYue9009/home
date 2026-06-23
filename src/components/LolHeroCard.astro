@@ -1,0 +1,62 @@
+---
+const { hero } = Astro.props;
+---
+
+<a
+  href={hero.detailUrl}
+  class="lol-hero-card glass-card glass-card-hover group block overflow-hidden transition"
+>
+  <div class="lol-hero-card__art relative aspect-[3/4] overflow-hidden bg-black/20">
+    <img
+      src={hero.image}
+      alt={`${hero.fullName} ${hero.name}`}
+      class="h-full w-full object-cover object-top transition duration-500 group-hover:scale-105"
+      loading="lazy"
+      decoding="async"
+    />
+    <div class="lol-hero-card__shade absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+    <img
+      src={hero.icon}
+      alt=""
+      class="absolute left-4 top-4 h-12 w-12 rounded-full border-2 border-white/30 shadow-lg"
+      loading="lazy"
+      decoding="async"
+      aria-hidden="true"
+    />
+  </div>
+
+  <div class="p-5">
+    <p class="text-xs font-medium uppercase tracking-widest text-accent">{hero.alias}</p>
+    <h2 class="lol-hero-card__names mt-1 font-display text-xl font-bold text-heading">
+      <span>{hero.fullName}</span>
+      <span>{hero.name}</span>
+    </h2>
+    <p class="mt-3 text-xs text-subtle">{hero.roleLabel}</p>
+    <p class="mt-4 text-sm text-accent-soft opacity-0 transition group-hover:opacity-100">
+      查看对线笔记 →
+    </p>
+  </div>
+</a>
+
+<style lang="scss">
+  .lol-hero-card {
+    &__art {
+      mask-image: linear-gradient(to bottom, #000 88%, transparent);
+    }
+
+    &__shade {
+      opacity: 0.85;
+    }
+
+    &:hover .lol-hero-card__shade {
+      opacity: 1;
+    }
+
+    &__names {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 0.35rem 0.5rem;
+    }
+  }
+</style>

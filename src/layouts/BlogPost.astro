@@ -2,6 +2,7 @@
 import BaseLayout from './BaseLayout.astro';
 import GiscusComments from '../components/GiscusComments.vue';
 import { CATEGORIES, formatDate } from '../config/consts';
+import { withBase } from '../lib/paths';
 
 const { post } = Astro.props;
 const { title, description, pubDate, category, tags } = post.data;
@@ -13,7 +14,7 @@ const cat = CATEGORIES[category];
   <article class="mx-auto max-w-3xl px-4 py-12 sm:px-6">
     <header class="mb-10">
       <a
-        href={`/${category}`}
+        href={withBase(category)}
         class={`mb-4 inline-flex items-center gap-1.5 text-sm font-medium ${cat.color}`}
       >
         <span>{cat.emoji}</span>

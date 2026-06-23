@@ -8,7 +8,7 @@ export const SITE = {
 export const CATEGORIES = {
   life: { label: '生活', emoji: '🌿', color: 'text-emerald-400' },
   tech: { label: '技术', emoji: '⚡', color: 'text-sky-400' },
-  gaming: { label: '游戏', emoji: '🎮', color: 'text-violet-400' },
+  lol: { label: 'LOL', emoji: '⚔️', color: 'text-violet-400' },
 };
 
 export function formatDate(date) {

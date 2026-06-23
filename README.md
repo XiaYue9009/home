@@ -47,7 +47,7 @@ tags: [Astro, Vue]
 正文内容...
 ```
 
-`category` 可选：`life` | `tech` | `gaming`
+`category` 可选：`life` | `tech` | `lol`
 
 ## 配置评论（Giscus）
 
@@ -64,7 +64,7 @@ tags: [Astro, Vue]
 ```js
 export default defineConfig({
   site: 'https://XiaYue9009.github.io',
-  base: '/home',  // 若使用 username.github.io 根域名，改为 '/'
+  base: '/home/',  // GitHub Pages 项目页路径
 });
 ```
 

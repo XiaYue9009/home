@@ -3,8 +3,10 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import HeroMoon from '../components/HeroMoon.vue';
 import InteractiveDemo from '../components/InteractiveDemo.vue';
 import PostCard from '../components/PostCard.astro';
+import CategoryIcon from '../components/CategoryIcon.astro';
 import { getCollection } from 'astro:content';
 import { SITE, CATEGORIES } from '../config/consts';
+import { withBase } from '../lib/paths';
 
 const posts = (await getCollection('posts', ({ data }) => !data.draft))
   .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
@@ -21,8 +23,8 @@ const posts = (await getCollection('posts', ({ data }) => !data.draft))
       </h1>
       <p class="mt-6 max-w-2xl text-lg text-muted">{SITE.description}</p>
       <div class="mt-8 flex flex-wrap gap-3">
-        <a href="/tech" class="btn-primary">浏览技术贴</a>
-        <a href="/about" class="btn-ghost">关于本站</a>
+        <a href={withBase('tech')} class="btn-primary">浏览技术贴</a>
+        <a href={withBase('about')} class="btn-ghost">关于本站</a>
       </div>
     </div>
   </section>
@@ -32,8 +34,8 @@ const posts = (await getCollection('posts', ({ data }) => !data.draft))
     <div class="grid gap-4 sm:grid-cols-3">
       {
         Object.entries(CATEGORIES).map(([key, cat]) => (
-          <a href={`/${key}`} class="glass-card glass-card-hover group p-6 transition">
-            <span class="text-3xl">{cat.emoji}</span>
+          <a href={withBase(key)} class="glass-card glass-card-hover group p-6 transition">
+            <CategoryIcon category={key} size="md" />
             <h3 class={`mt-3 font-display text-xl font-semibold ${cat.color}`}>{cat.label}</h3>
             <p class="mt-1 text-sm text-muted group-hover:text-accent-soft">查看全部 →</p>
           </a>

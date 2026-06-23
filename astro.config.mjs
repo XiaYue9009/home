@@ -8,7 +8,7 @@ import Components from 'unplugin-vue-components/vite';
 // https://astro.build/config
 export default defineConfig({
   site: 'https://XiaYue9009.github.io',
-  base: '/home',
+  base: '/home/',
   server: {
     open: true,
   },
