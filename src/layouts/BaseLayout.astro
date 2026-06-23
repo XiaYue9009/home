@@ -3,6 +3,7 @@ import BaseHead from '../components/BaseHead.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import '../styles/global.css';
+import { DEFAULT_THEME, THEME_STORAGE_KEY } from '../themes';
 
 interface Props {
   title: string;
@@ -13,9 +14,16 @@ const { title, description } = Astro.props;
 ---
 
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme={DEFAULT_THEME}>
   <head>
     <BaseHead title={title} description={description} />
+    <script is:inline define:vars={{ storageKey: THEME_STORAGE_KEY, defaultTheme: DEFAULT_THEME }}>
+      (function () {
+        var t = localStorage.getItem(storageKey) || defaultTheme;
+        if (t !== 'nature' && t !== 'minimal' && t !== 'night') t = defaultTheme;
+        document.documentElement.setAttribute('data-theme', t);
+      })();
+    </script>
   </head>
   <body class="flex min-h-screen flex-col">
     <Header />
@@ -29,5 +37,18 @@ const { title, description } = Astro.props;
 <style is:global>
   html {
     scrollbar-gutter: stable;
+  }
+
+  @keyframes theme-glow {
+    0% {
+      box-shadow: 0 0 16px var(--color-btn-shadow);
+    }
+    100% {
+      box-shadow: 0 0 32px var(--color-btn-shadow);
+    }
+  }
+
+  .animate-glow {
+    animation: theme-glow 3s ease-in-out infinite alternate;
   }
 </style>

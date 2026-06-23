@@ -1,8 +1,13 @@
 {
-  "name": "moon-home",
+  "name": "home",
   "type": "module",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@10.12.1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/XiaYue9009/home.git"
+  },
   "scripts": {
     "dev": "astro dev",
     "build": "astro check && astro build",

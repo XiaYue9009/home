@@ -3,20 +3,20 @@ import { SITE } from '../consts';
 const year = new Date().getFullYear();
 ---
 
-<footer class="border-t border-white/5 py-8">
-  <div class="mx-auto flex max-w-6xl flex-col items-center gap-2 px-4 text-center text-sm text-slate-500 sm:px-6">
-    <p>
+<footer class="border-t border-theme py-8">
+  <div class="mx-auto flex max-w-6xl flex-col items-center gap-2 px-4 text-center text-sm text-subtle sm:px-6">
+    <p class="text-muted">
       © {year} {SITE.title} · 用
       <a
         href="https://astro.build"
         target="_blank"
         rel="noopener noreferrer"
-        class="text-moon-400 hover:text-moon-300"
+        class="text-link"
       >
         Astro
       </a>
       构建
     </p>
-    <p class="text-xs text-slate-600">生活 · 技术 · 游戏</p>
+    <p class="text-xs text-subtle">生活 · 技术 · 游戏</p>
   </div>
 </footer>

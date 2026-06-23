@@ -1,0 +1,92 @@
+/* 1. 绿色自然风 */
+[data-theme='nature'] {
+  --color-bg: #f2f8f4;
+  --color-bg-grad-1: rgba(34, 197, 94, 0.14);
+  --color-bg-grad-2: rgba(74, 222, 128, 0.08);
+  --color-text: #1a2e22;
+  --color-text-muted: #4a6356;
+  --color-text-subtle: #7a9488;
+  --color-heading: #0f2418;
+  --color-accent: #059669;
+  --color-accent-hover: #047857;
+  --color-accent-soft: #34d399;
+  --color-accent-text: #ffffff;
+  --color-border: rgba(16, 124, 88, 0.14);
+  --color-glass-bg: rgba(255, 255, 255, 0.65);
+  --color-glass-border: rgba(16, 124, 88, 0.12);
+  --color-header-bg: rgba(242, 248, 244, 0.88);
+  --color-nav-active-bg: rgba(5, 150, 105, 0.12);
+  --color-nav-active-text: #047857;
+  --color-tag-bg: rgba(16, 124, 88, 0.1);
+  --color-selection-bg: rgba(5, 150, 105, 0.25);
+  --color-btn-shadow: rgba(5, 150, 105, 0.25);
+  --color-prose-pre-bg: rgba(255, 255, 255, 0.8);
+  --color-prose-pre-border: rgba(16, 124, 88, 0.15);
+  --hero-star: 52, 211, 153;
+  --hero-glow: 16, 185, 129;
+  --hero-moon: #86efac;
+  --hero-moon-shadow: #f2f8f4;
+  --hero-opacity: 0.75;
+}
+
+/* 2. 白色简约风 */
+[data-theme='minimal'] {
+  --color-bg: #ffffff;
+  --color-bg-grad-1: rgba(0, 0, 0, 0.025);
+  --color-bg-grad-2: rgba(0, 0, 0, 0.015);
+  --color-text: #3f3f46;
+  --color-text-muted: #71717a;
+  --color-text-subtle: #a1a1aa;
+  --color-heading: #18181b;
+  --color-accent: #27272a;
+  --color-accent-hover: #18181b;
+  --color-accent-soft: #52525b;
+  --color-accent-text: #ffffff;
+  --color-border: rgba(0, 0, 0, 0.08);
+  --color-glass-bg: rgba(250, 250, 250, 0.9);
+  --color-glass-border: rgba(0, 0, 0, 0.06);
+  --color-header-bg: rgba(255, 255, 255, 0.92);
+  --color-nav-active-bg: rgba(0, 0, 0, 0.06);
+  --color-nav-active-text: #18181b;
+  --color-tag-bg: rgba(0, 0, 0, 0.05);
+  --color-selection-bg: rgba(0, 0, 0, 0.12);
+  --color-btn-shadow: rgba(0, 0, 0, 0.12);
+  --color-prose-pre-bg: #fafafa;
+  --color-prose-pre-border: rgba(0, 0, 0, 0.08);
+  --hero-star: 161, 161, 170;
+  --hero-glow: 0, 0, 0;
+  --hero-moon: #e4e4e7;
+  --hero-moon-shadow: #ffffff;
+  --hero-opacity: 0.45;
+}
+
+/* 3. 黑色夜间柔和 */
+[data-theme='night'] {
+  --color-bg: #16161e;
+  --color-bg-grad-1: rgba(169, 180, 248, 0.12);
+  --color-bg-grad-2: rgba(122, 138, 214, 0.06);
+  --color-text: #cdd6f4;
+  --color-text-muted: #9399b2;
+  --color-text-subtle: #6c7086;
+  --color-heading: #eceff4;
+  --color-accent: #8992e6;
+  --color-accent-hover: #a9b4f8;
+  --color-accent-soft: #b4befe;
+  --color-accent-text: #16161e;
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-glass-bg: rgba(255, 255, 255, 0.04);
+  --color-glass-border: rgba(255, 255, 255, 0.08);
+  --color-header-bg: rgba(22, 22, 30, 0.88);
+  --color-nav-active-bg: rgba(137, 146, 230, 0.16);
+  --color-nav-active-text: #b4befe;
+  --color-tag-bg: rgba(255, 255, 255, 0.06);
+  --color-selection-bg: rgba(137, 146, 230, 0.35);
+  --color-btn-shadow: rgba(137, 146, 230, 0.3);
+  --color-prose-pre-bg: rgba(0, 0, 0, 0.35);
+  --color-prose-pre-border: rgba(255, 255, 255, 0.08);
+  --hero-star: 180, 190, 254;
+  --hero-glow: 137, 146, 230;
+  --hero-moon: #cdd6f4;
+  --hero-moon-shadow: #16161e;
+  --hero-opacity: 0.8;
+}

@@ -15,7 +15,7 @@ function ripple(event: MouseEvent) {
     height: ${size}px;
     left: ${event.clientX - rect.left - size / 2}px;
     top: ${event.clientY - rect.top - size / 2}px;
-    background: rgba(255,255,255,0.35);
+    background: color-mix(in srgb, var(--color-accent-text) 35%, transparent);
     border-radius: 50%;
     transform: scale(0);
     animation: ripple 0.6s ease-out forwards;
@@ -28,11 +28,11 @@ function ripple(event: MouseEvent) {
 
 <template>
   <div class="glass-card p-6">
-    <p class="mb-4 text-sm text-slate-400">Vue 交互示例 · 点击按钮体验涟漪效果</p>
+    <p class="mb-4 text-sm text-muted">Vue 交互示例 · 点击按钮体验涟漪效果</p>
     <div class="flex items-center gap-4">
       <button
         type="button"
-        class="relative overflow-hidden rounded-full bg-moon-600 px-6 py-3 font-medium text-white transition hover:bg-moon-500"
+        class="btn-primary relative overflow-hidden px-6 py-3"
         @click="(e) => { count++; ripple(e); }"
         @mouseenter="hovering = true"
         @mouseleave="hovering = false"
@@ -40,7 +40,7 @@ function ripple(event: MouseEvent) {
       >
         点我 +1
       </button>
-      <span class="font-display text-2xl font-bold text-moon-300">{{ count }}</span>
+      <span class="font-display text-2xl font-bold text-accent-soft">{{ count }}</span>
     </div>
   </div>
 </template>

@@ -17,16 +17,16 @@
 
 ```bash
 # 安装依赖
-npm install
+pnpm install
 
-# 启动开发服务器
-npm run dev
+# 启动开发服务器（自动打开系统浏览器）
+pnpm dev
 
 # 构建
-npm run build
+pnpm build
 
 # 预览构建结果
-npm run preview
+pnpm preview
 ```
 
 开发服务器默认运行在 http://localhost:4321
@@ -64,7 +64,7 @@ tags: [Astro, Vue]
 ```js
 export default defineConfig({
   site: 'https://XiaYue9009.github.io',
-  base: '/MoonHome',  // 若使用 username.github.io 根域名，改为 '/'
+  base: '/home',  // 若使用 username.github.io 根域名，改为 '/'
 });
 ```
 
@@ -77,7 +77,7 @@ git init
 git add .
 git commit -m "init: MoonHome personal site"
 git branch -M main
-git remote add origin https://github.com/XiaYue9009/MoonHome.git
+git remote add origin https://github.com/XiaYue9009/home.git
 git push -u origin main
 ```
 
@@ -89,12 +89,12 @@ git push -u origin main
 
 推送 `main` 分支后，`.github/workflows/deploy.yml` 会自动构建并发布。
 
-站点地址：`https://XiaYue9009.github.io/MoonHome/`
+站点地址：`https://XiaYue9009.github.io/home/`
 
 ## 改用 Vercel / Cloudflare Pages
 
 1. 导入 GitHub 仓库
-2. Build command: `npm run build`
+2. Build command: `pnpm build`
 3. Output directory: `dist`
 4. 若使用自定义域名，将 `astro.config.mjs` 中 `base` 改为 `'/'`
 
