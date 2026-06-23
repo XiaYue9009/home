@@ -1,0 +1,64 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import HeroMoon from '../components/HeroMoon.vue';
+import InteractiveDemo from '../components/InteractiveDemo.vue';
+import PostCard from '../components/PostCard.astro';
+import { getCollection } from 'astro:content';
+import { SITE, CATEGORIES } from '../consts';
+
+const posts = (await getCollection('posts', ({ data }) => !data.draft))
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
+  .slice(0, 6);
+---
+
+<BaseLayout title="首页">
+  <section class="relative overflow-hidden">
+    <HeroMoon client:load />
+    <div class="relative mx-auto max-w-6xl px-4 py-24 sm:px-6 sm:py-32">
+      <p class="mb-4 text-sm font-medium uppercase tracking-widest text-moon-400">Personal Site</p>
+      <h1 class="font-display text-4xl font-bold tracking-tight text-white sm:text-6xl">
+        {SITE.title}
+      </h1>
+      <p class="mt-6 max-w-2xl text-lg text-slate-300">{SITE.description}</p>
+      <div class="mt-8 flex flex-wrap gap-3">
+        <a href="/tech" class="btn-primary">浏览技术贴</a>
+        <a href="/about" class="btn-ghost">关于本站</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-6xl px-4 py-12 sm:px-6">
+    <h2 class="mb-6 font-display text-2xl font-bold text-white">分类</h2>
+    <div class="grid gap-4 sm:grid-cols-3">
+      {
+        Object.entries(CATEGORIES).map(([key, cat]) => (
+          <a
+            href={`/${key}`}
+            class="glass-card group p-6 transition hover:border-moon-500/30"
+          >
+            <span class="text-3xl">{cat.emoji}</span>
+            <h3 class={`mt-3 font-display text-xl font-semibold ${cat.color}`}>{cat.label}</h3>
+            <p class="mt-1 text-sm text-slate-400 group-hover:text-slate-300">查看全部 →</p>
+          </a>
+        ))
+      }
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-6xl px-4 py-12 sm:px-6">
+    <InteractiveDemo client:visible />
+  </section>
+
+  <section class="mx-auto max-w-6xl px-4 pb-20 sm:px-6">
+    <h2 class="mb-6 font-display text-2xl font-bold text-white">最新文章</h2>
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {posts.map((post) => <PostCard post={post} />)}
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  section:first-of-type {
+    min-height: 420px;
+  }
+</style>
