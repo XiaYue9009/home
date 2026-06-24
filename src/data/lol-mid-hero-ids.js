@@ -1,6 +1,6 @@
 /**
  * 官方分路数据中的中单英雄 ID（guideschampion_position.js · mid）
- * 由 Node 拉取生成，避免浏览器 CORS 导致表格缺行
+ * 由 `pnpm sync:lol-mid` 生成，避免浏览器 CORS
  */
 export const MID_HERO_IDS = [
   '84',

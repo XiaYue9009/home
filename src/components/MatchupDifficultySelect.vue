@@ -16,8 +16,9 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue']);
 
 const open = ref(false);
-const triggerRef = ref(null);
 const menuStyle = ref({});
+const isMounted = ref(false);
+let triggerEl = null;
 
 const displayLabel = computed(() => {
   if (props.modelValue) return getDifficultyLabel(props.modelValue);
@@ -35,10 +36,9 @@ const options = computed(() => {
 });
 
 function updateMenuPosition() {
-  const el = triggerRef.value;
-  if (!el) return;
+  if (!triggerEl) return;
 
-  const rect = el.getBoundingClientRect();
+  const rect = triggerEl.getBoundingClientRect();
   menuStyle.value = {
     position: 'fixed',
     top: `${rect.bottom + 6}px`,
@@ -52,8 +52,9 @@ function closeMenu() {
   open.value = false;
 }
 
-function toggleMenu() {
+function toggleMenu(event) {
   if (props.disabled) return;
+  triggerEl = event.currentTarget;
   open.value = !open.value;
   if (open.value) nextTick(updateMenuPosition);
 }
@@ -66,7 +67,7 @@ function selectOption(id) {
 function onDocumentClick(event) {
   if (!open.value) return;
   const target = event.target;
-  if (triggerRef.value?.contains(target)) return;
+  if (triggerEl?.contains(target)) return;
   if (target.closest?.('.difficulty-select__menu')) return;
   closeMenu();
 }
@@ -95,6 +96,7 @@ watch(open, (isOpen) => {
 });
 
 onMounted(() => {
+  isMounted.value = true;
   if (typeof document === 'undefined') return;
   document.addEventListener('click', onDocumentClick);
   document.addEventListener('keydown', onDocumentKeydown);
@@ -121,7 +123,6 @@ onUnmounted(() => {
     ]"
   >
     <button
-      ref="triggerRef"
       type="button"
       class="difficulty-select__trigger"
       :disabled="disabled"
@@ -156,7 +157,7 @@ onUnmounted(() => {
       </span>
     </button>
 
-    <Teleport to="body">
+    <Teleport v-if="isMounted" to="body">
       <Transition name="difficulty-select-menu">
         <ul
           v-if="open"

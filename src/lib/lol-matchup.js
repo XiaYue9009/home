@@ -11,6 +11,8 @@ import {
   allRuneIdsFromRow,
   parseItemIds,
   parseRuneIds,
+  orderRuneLoadout,
+  runeStyleFromIds,
   splitRuneIds,
 } from './lol-game-data.js';
 import {
@@ -23,11 +25,8 @@ export { isCloudSyncEnabled };
 
 const LOL_REFERER = 'https://101.qq.com/';
 const HERO_LIST_URL = 'https://game.gtimg.cn/images/lol/act/img/js/heroList/hero_list.js';
-const CHAMPION_POSITION_URL =
-  'https://lol.qq.com/act/lbp/common/guides/guideschampion_position.js';
 
 let heroListCache = null;
-let positionCache = null;
 
 export function lolHeroIcon(alias) {
   return `https://game.gtimg.cn/images/lol/act/img/champion/${alias}.png`;
@@ -63,6 +62,43 @@ function parseUpdatedAt(value = '') {
   return Number.isFinite(time) ? time : 0;
 }
 
+function sameIdList(a = [], b = []) {
+  return a.length === b.length && a.every((id, index) => id === b[index]);
+}
+
+/** 是否为有实质内容的记录（空占位行不同步到云端/本地缓存） */
+export function isMatchupRowStored(row = {}) {
+  const hasLoadout =
+    row.primaryRuneIds?.length || row.secondaryRuneIds?.length || row.itemIds?.length;
+
+  if (!row.enemyId) {
+    return Boolean(row.tips?.trim() || hasLoadout);
+  }
+
+  if (row.tips?.trim()) return true;
+  if (row.difficulty && row.difficulty !== DEFAULT_MATCHUP_DIFFICULTY) return true;
+  if (hasLoadout) return true;
+  if (!sameIdList(row.skillIds, createDefaultSkillIds())) return true;
+  if (!sameIdList(row.candidateSpellIds, normalizeCandidateSpellIds([], row.enemyId))) return true;
+
+  return false;
+}
+
+/** 精简存储：去掉空占位行与可推导字段 */
+export function compactRowsForStorage(rows = []) {
+  return rows.filter(isMatchupRowStored).map((row) => ({
+    id: row.id,
+    enemyId: row.enemyId || '',
+    candidateSpellIds: [...(row.candidateSpellIds || [])],
+    skillIds: [...(row.skillIds || [])],
+    primaryRuneIds: [...(row.primaryRuneIds || [])],
+    secondaryRuneIds: [...(row.secondaryRuneIds || [])],
+    itemIds: [...(row.itemIds || [])],
+    difficulty: row.difficulty || DEFAULT_MATCHUP_DIFFICULTY,
+    tips: row.tips || '',
+  }));
+}
+
 /** 从云端 / 本地缓存 / 静态默认数据中选择最新的一份 */
 export async function resolveMatchupSource(heroId, fallbackRows = []) {
   const localRows = loadStoredMatchups(heroId);
@@ -79,27 +115,30 @@ export async function resolveMatchupSource(heroId, fallbackRows = []) {
     const hasLocalRows = Array.isArray(localRows) && localRows.length > 0;
 
     if (hasCloudRows && (!hasLocalRows || cloudUpdated >= localUpdated)) {
-      saveStoredMatchups(heroId, cloud.rows);
+      const compact = compactRowsForStorage(cloud.rows);
+      saveStoredMatchups(heroId, compact);
       saveMatchupMeta(heroId, { updatedAt: cloud.updatedAt, source: 'cloud' });
-      return cloud.rows;
+      return compact.length ? compact : fallbackRows;
     }
 
     const source = hasLocalRows ? localRows : fallbackRows;
-    if (source.length && (!hasCloudRows || localUpdated > cloudUpdated)) {
-      const syncedAt = await upsertCloudMatchups(heroId, source);
+    const compact = compactRowsForStorage(source);
+    if (compact.length && (!hasCloudRows || localUpdated > cloudUpdated)) {
+      const syncedAt = await upsertCloudMatchups(heroId, compact);
       saveMatchupMeta(heroId, { updatedAt: syncedAt, source: 'cloud' });
     }
 
-    return source;
+    return compact.length ? compact : fallbackRows;
   } catch {
     return localRows?.length ? localRows : fallbackRows;
   }
 }
 
-/** 写入本地缓存，并同步到云端 */
+/** 写入本地缓存，并同步到云端（仅保存有内容的记录） */
 export async function persistMatchups(heroId, rows) {
+  const stored = compactRowsForStorage(rows);
   const updatedAt = new Date().toISOString();
-  saveStoredMatchups(heroId, rows);
+  saveStoredMatchups(heroId, stored);
   saveMatchupMeta(heroId, { updatedAt, source: 'local' });
 
   if (!isCloudSyncEnabled()) {
@@ -107,7 +146,7 @@ export async function persistMatchups(heroId, rows) {
   }
 
   try {
-    const syncedAt = await upsertCloudMatchups(heroId, rows);
+    const syncedAt = await upsertCloudMatchups(heroId, stored);
     saveMatchupMeta(heroId, { updatedAt: syncedAt, source: 'cloud' });
     return { ok: true, cloud: true };
   } catch (error) {
@@ -134,23 +173,6 @@ export async function fetchLolHeroList() {
   return heroListCache;
 }
 
-function parseChampionPositionScript(text = '') {
-  const start = text.indexOf('{');
-  const end = text.indexOf('};');
-  if (start < 0 || end < 0) throw new Error('分路数据解析失败');
-  return JSON.parse(text.slice(start, end + 1)).list;
-}
-
-export async function fetchChampionPositions() {
-  if (positionCache) return positionCache;
-
-  const res = await fetch(CHAMPION_POSITION_URL, { headers: { Referer: LOL_REFERER } });
-  if (!res.ok) throw new Error('分路数据获取失败');
-
-  positionCache = parseChampionPositionScript(await res.text());
-  return positionCache;
-}
-
 function sortMidHeroIds(ids, heroes = []) {
   const byId = new Map(heroes.map((hero) => [hero.id, hero]));
   return [...ids].sort((a, b) => {
@@ -161,20 +183,14 @@ function sortMidHeroIds(ids, heroes = []) {
 }
 
 export async function fetchMidHeroIds() {
-  let ids = MID_HERO_IDS;
-
+  let heroes = [];
   try {
-    const [heroes, positions] = await Promise.all([fetchLolHeroList(), fetchChampionPositions()]);
-    const dynamic = heroes
-      .filter((hero) => positions[hero.id]?.mid !== undefined)
-      .map((hero) => hero.id);
-
-    if (dynamic.length >= MID_HERO_IDS.length - 3) ids = dynamic;
-    return sortMidHeroIds(ids, heroes);
+    heroes = await fetchLolHeroList();
   } catch {
-    const heroes = await fetchLolHeroList().catch(() => []);
-    return sortMidHeroIds(ids, heroes);
+    heroes = [];
   }
+
+  return sortMidHeroIds(MID_HERO_IDS, heroes);
 }
 
 export function sortMatchupRowsByHeroName(rows = [], heroLookup) {
@@ -261,7 +277,12 @@ export function normalizeMatchupRow(row, lookup, catalogs = {}) {
     : lookup.byLabel.get(row.enemy) || lookup.byLabel.get(row.enemyName);
 
   const enemyId = enemyHero?.id || row.enemyId || '';
-  const { primaryRuneIds, secondaryRuneIds } = normalizeRunes(row, catalogs.runes || []);
+  let { primaryRuneIds, secondaryRuneIds } = normalizeRunes(row, catalogs.runes || []);
+  ({ primaryRuneIds, secondaryRuneIds } = orderRuneLoadout(
+    primaryRuneIds,
+    secondaryRuneIds,
+    catalogs.runes || [],
+  ));
 
   const itemIds = row.itemIds?.length
     ? [...row.itemIds]
@@ -297,7 +318,8 @@ export function loadStoredMatchups(heroId) {
 
   try {
     const raw = localStorage.getItem(matchupStorageKey(heroId));
-    return raw ? JSON.parse(raw) : null;
+    if (!raw) return null;
+    return compactRowsForStorage(JSON.parse(raw));
   } catch {
     return null;
   }

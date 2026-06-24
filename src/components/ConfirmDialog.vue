@@ -9,6 +9,7 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['update:open', 'confirm', 'cancel']);
+const isMounted = ref(false);
 
 function close() {
   emit('update:open', false);
@@ -37,6 +38,7 @@ watch(
 );
 
 onMounted(() => {
+  isMounted.value = true;
   if (typeof window !== 'undefined') {
     window.addEventListener('keydown', onKeydown);
   }
@@ -53,7 +55,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <Teleport to="body">
+  <Teleport v-if="isMounted" to="body">
     <Transition name="confirm-dialog">
       <div
         v-if="open"

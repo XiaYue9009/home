@@ -4,6 +4,7 @@ import LolHeroSummary from './LolHeroSummary.astro';
 
 const { hero, compact = false, barText = false, artOnly = false } = Astro.props;
 const heroMeta = getLolHeroMeta(hero.id);
+const splashAlt = `${hero.fullName} ${hero.name}`.trim();
 ---
 
 <aside class:list={[
@@ -21,7 +22,7 @@ const heroMeta = getLolHeroMeta(hero.id);
       <div class="lol-hero-profile__art">
         <img
           src={hero.splash}
-          alt={`${hero.fullName} ${hero.name}`}
+          alt={splashAlt}
           class="lol-hero-profile__splash"
           loading="eager"
           decoding="async"
@@ -37,7 +38,7 @@ const heroMeta = getLolHeroMeta(hero.id);
         <div class="lol-hero-profile__art">
           <img
             src={hero.splash}
-            alt={`${hero.fullName} ${hero.name}`}
+            alt={splashAlt}
             class="lol-hero-profile__splash"
             loading="eager"
             decoding="async"

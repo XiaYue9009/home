@@ -5,11 +5,11 @@ const RUNE_TREE_IDS = new Set(['8000', '8100', '8200', '8300', '8400']);
 export const RUNE_TREE_NAMES = ['精密', '主宰', '巫术', '坚决', '启迪'];
 
 export const RUNE_SLOT_ORDER = {
-  精密: ['基石', '英武', '战斗', '传说'],
+  精密: ['基石', '英武', '传说', '战斗'],
   主宰: ['基石', '预谋', '追踪', '狩猎'],
-  巫术: ['基石', '宝物', '威能', '卓越'],
+  巫术: ['基石', '宝物', '卓越', '威能'],
   坚决: ['基石', '蛮力', '抵抗', '生机'],
-  启迪: ['基石', '未来', '超越', '巧具'],
+  启迪: ['基石', '巧具', '未来', '超越'],
 };
 
 export const LOADOUT_ITEM_SLOTS = 6;
@@ -273,6 +273,36 @@ export function runeStyleFromIds(ids = [], catalog = []) {
     if (style) return style;
   }
   return '';
+}
+
+/** 按符文系槽位顺序排列（列表展示与游戏内一致） */
+export function sortRuneIdsBySlot(ids = [], catalog = [], styleName = '') {
+  const order = RUNE_SLOT_ORDER[styleName];
+  if (!order?.length) return [...ids];
+
+  const slotIndex = (id) => {
+    const slot = catalog.find((rune) => rune.id === id)?.slotLabel;
+    const index = order.indexOf(slot);
+    return index >= 0 ? index : order.length;
+  };
+
+  return [...ids].sort((a, b) => {
+    const diff = slotIndex(a) - slotIndex(b);
+    if (diff !== 0) return diff;
+    const orderA = catalog.find((rune) => rune.id === a)?.displayOrder ?? 0;
+    const orderB = catalog.find((rune) => rune.id === b)?.displayOrder ?? 0;
+    return orderA - orderB;
+  });
+}
+
+export function orderRuneLoadout(primaryRuneIds = [], secondaryRuneIds = [], catalog = []) {
+  const primaryStyle = runeStyleFromIds(primaryRuneIds, catalog);
+  const secondaryStyle = runeStyleFromIds(secondaryRuneIds, catalog);
+
+  return {
+    primaryRuneIds: sortRuneIdsBySlot(primaryRuneIds, catalog, primaryStyle),
+    secondaryRuneIds: sortRuneIdsBySlot(secondaryRuneIds, catalog, secondaryStyle),
+  };
 }
 
 export function primaryRuneInSlot(ids = [], catalog = [], tree, slot) {

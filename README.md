@@ -62,8 +62,9 @@ tags: [Astro, Vue]
 ### 1. 创建 Supabase 项目
 
 1. 打开 [supabase.com](https://supabase.com) 注册并新建项目
-2. 进入 **SQL Editor**，执行仓库中的 `supabase/lol_matchups.sql`
-3. 在 **Project Settings → API** 复制：
+2. 进入 **SQL Editor**，执行仓库中的 `supabase/lol_matchup_entries.sql`（推荐；一行一条对线记录，Table Editor 可直接查看）
+3. 若已有旧表，可保留 `lol_matchups.sql` 创建的表，应用会自动迁移
+4. 在 **Project Settings → API** 复制：
    - **Project URL** → `PUBLIC_SUPABASE_URL`
    - **anon public** key → `PUBLIC_SUPABASE_ANON_KEY`
 

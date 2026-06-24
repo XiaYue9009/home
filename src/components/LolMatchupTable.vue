@@ -36,8 +36,10 @@ import {
   groupRunesByTree,
   itemIdsFromSlots,
   normalizeItemSlots,
+  orderRuneLoadout,
   primaryRuneInSlot,
   runeStyleFromIds,
+  sortRuneIdsBySlot,
 } from '../lib/lol-game-data.js';
 import {
   buildHeroLookup,
@@ -79,6 +81,8 @@ const runeTooltip = ref(null);
 const runeTooltipPos = ref({ top: 0, left: 0 });
 const pendingDeleteRow = ref(null);
 const syncStatus = ref('idle');
+const hydrating = ref(true);
+const isMounted = ref(false);
 
 const syncStatusLabel = computed(() => {
   if (!isCloudSyncEnabled()) return '仅本地';
@@ -300,8 +304,13 @@ function syncLoadoutDraftToRow() {
   const row = activeRow.value;
   if (!row || !loadoutDraft.value) return;
 
-  row.primaryRuneIds = [...loadoutDraft.value.primaryRuneIds];
-  row.secondaryRuneIds = [...loadoutDraft.value.secondaryRuneIds];
+  const ordered = orderRuneLoadout(
+    loadoutDraft.value.primaryRuneIds,
+    loadoutDraft.value.secondaryRuneIds,
+    runes.value,
+  );
+  row.primaryRuneIds = ordered.primaryRuneIds;
+  row.secondaryRuneIds = ordered.secondaryRuneIds;
   row.itemIds = itemIdsFromSlots(loadoutDraft.value.itemSlots);
 }
 
@@ -490,10 +499,13 @@ function isKeystoneRune(runeId) {
 }
 
 function sortedPrimaryRunes(row) {
-  return [...row.primaryRuneIds].sort((a, b) => {
-    if (isKeystoneRune(a) === isKeystoneRune(b)) return 0;
-    return isKeystoneRune(a) ? -1 : 1;
-  });
+  const style = runeStyleFromIds(row.primaryRuneIds, runes.value);
+  return sortRuneIdsBySlot(row.primaryRuneIds, runes.value, style);
+}
+
+function sortedSecondaryRunes(row) {
+  const style = runeStyleFromIds(row.secondaryRuneIds, runes.value);
+  return sortRuneIdsBySlot(row.secondaryRuneIds, runes.value, style);
 }
 
 function addRow() {
@@ -511,8 +523,9 @@ function copyLoadout(row) {
 function pasteLoadout(row) {
   const data = loadoutClipboard.value;
   if (!data) return;
-  row.primaryRuneIds = [...data.primaryRuneIds];
-  row.secondaryRuneIds = [...data.secondaryRuneIds];
+  const ordered = orderRuneLoadout(data.primaryRuneIds, data.secondaryRuneIds, runes.value);
+  row.primaryRuneIds = ordered.primaryRuneIds;
+  row.secondaryRuneIds = ordered.secondaryRuneIds;
   row.itemIds = [...data.itemIds];
 }
 
@@ -531,7 +544,7 @@ let saveTimer;
 watch(
   rows,
   (value) => {
-    if (!props.heroId || loading.value) return;
+    if (!props.heroId || loading.value || hydrating.value) return;
     clearTimeout(saveTimer);
     saveTimer = setTimeout(async () => {
       if (isCloudSyncEnabled()) syncStatus.value = 'syncing';
@@ -544,6 +557,7 @@ watch(
 );
 
 onMounted(async () => {
+  isMounted.value = true;
   if (isCloudSyncEnabled()) syncStatus.value = 'syncing';
 
   try {
@@ -572,13 +586,9 @@ onMounted(async () => {
 
   rows.value = normalized;
   loading.value = false;
+  hydrating.value = false;
 
-  if (props.heroId && normalized.length) {
-    const result = await persistMatchups(props.heroId, normalized);
-    if (isCloudSyncEnabled()) {
-      syncStatus.value = result.ok ? 'synced' : 'error';
-    }
-  } else if (isCloudSyncEnabled()) {
+  if (isCloudSyncEnabled()) {
     syncStatus.value = 'synced';
   }
 });
@@ -795,7 +805,7 @@ onMounted(async () => {
                     <span class="lol-matchup-panel__rune-label">副</span>
                     <div class="lol-matchup-panel__icons">
                       <span
-                        v-for="runeId in row.secondaryRuneIds"
+                        v-for="runeId in sortedSecondaryRunes(row)"
                         :key="`s-${runeId}`"
                         class="lol-matchup-panel__icon-btn lol-matchup-panel__icon-btn--readonly"
                         :title="getRuneById(runes, runeId)?.name"
@@ -874,7 +884,7 @@ onMounted(async () => {
       </button>
     </div>
 
-    <Teleport to="body">
+    <Teleport v-if="isMounted" to="body">
       <div
         v-if="picker"
         class="lol-matchup-panel__overlay"
@@ -1200,7 +1210,7 @@ onMounted(async () => {
       </div>
     </Teleport>
 
-    <Teleport to="body">
+    <Teleport v-if="isMounted" to="body">
       <div
         v-if="runeTooltip"
         class="lol-rune-tooltip"

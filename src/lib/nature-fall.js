@@ -1,11 +1,4 @@
-<script setup>
-const canvasRef = ref(null);
-const active = ref(false);
-
-let animationId = 0;
-let resizeHandler = null;
-let themeObserver = null;
-let particles = [];
+const CANVAS_ID = 'nature-fall-canvas';
 
 function isNatureTheme() {
   return document.documentElement.getAttribute('data-theme') === 'nature';
@@ -109,25 +102,29 @@ function drawParticle(ctx, p) {
   }
 }
 
-function tick(w, h) {
-  if (particles.length < 48 && Math.random() < 0.04) {
-    particles.push(spawnParticle(w));
+export function initNatureFall() {
+  if (typeof window === 'undefined') return;
+
+  let canvas = document.getElementById(CANVAS_ID);
+  if (!canvas) {
+    canvas = document.createElement('canvas');
+    canvas.id = CANVAS_ID;
+    canvas.className = 'nature-fall pointer-events-none fixed inset-0';
+    canvas.setAttribute('aria-hidden', 'true');
+    document.body.prepend(canvas);
   }
 
-  particles = particles.filter((p) => {
-    p.y += p.speed;
-    p.sway += p.swaySpeed;
-    p.x += Math.sin(p.sway) * 0.35;
-    p.rotation += p.spin;
-    return p.y < h + 30;
-  });
-}
-
-function startLoop() {
-  const canvas = canvasRef.value;
-  if (!canvas) return;
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
+
+  let animationId = 0;
+  let particles = [];
+
+  const syncTheme = () => {
+    const active = isNatureTheme();
+    canvas.classList.toggle('nature-fall--active', active);
+    if (!active) particles = [];
+  };
 
   const resize = () => {
     canvas.width = window.innerWidth * devicePixelRatio;
@@ -136,19 +133,29 @@ function startLoop() {
     canvas.style.height = `${window.innerHeight}px`;
     ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
   };
-  resizeHandler = resize;
-  resize();
-  window.addEventListener('resize', resize);
+
+  const tick = (w, h) => {
+    if (particles.length < 48 && Math.random() < 0.04) {
+      particles.push(spawnParticle(w));
+    }
+
+    particles = particles.filter((p) => {
+      p.y += p.speed;
+      p.sway += p.swaySpeed;
+      p.x += Math.sin(p.sway) * 0.35;
+      p.rotation += p.spin;
+      return p.y < h + 30;
+    });
+  };
 
   const loop = () => {
     if (!isNatureTheme()) {
-      active.value = false;
-      particles = [];
+      syncTheme();
       animationId = requestAnimationFrame(loop);
       return;
     }
 
-    active.value = true;
+    syncTheme();
     const w = window.innerWidth;
     const h = window.innerHeight;
     ctx.clearRect(0, 0, w, h);
@@ -157,51 +164,16 @@ function startLoop() {
     animationId = requestAnimationFrame(loop);
   };
 
-  animationId = requestAnimationFrame(loop);
-}
-
-function syncTheme() {
-  active.value = isNatureTheme();
-  if (!active.value) particles = [];
-}
-
-onMounted(() => {
   syncTheme();
-  startLoop();
+  resize();
+  window.addEventListener('resize', resize);
 
-  themeObserver = new MutationObserver(syncTheme);
+  const themeObserver = new MutationObserver(syncTheme);
   themeObserver.observe(document.documentElement, {
     attributes: true,
     attributeFilter: ['data-theme'],
   });
   window.addEventListener('theme-change', syncTheme);
-});
 
-onUnmounted(() => {
-  cancelAnimationFrame(animationId);
-  if (resizeHandler) window.removeEventListener('resize', resizeHandler);
-  themeObserver?.disconnect();
-  window.removeEventListener('theme-change', syncTheme);
-});
-</script>
-
-<template>
-  <canvas
-    ref="canvasRef"
-    class="nature-fall pointer-events-none fixed inset-0"
-    :class="{ 'nature-fall--active': active }"
-    aria-hidden="true"
-  />
-</template>
-
-<style lang="scss" scoped>
-.nature-fall {
-  z-index: 5;
-  opacity: 0;
-  transition: opacity 0.4s ease;
-
-  &--active {
-    opacity: 1;
-  }
+  animationId = requestAnimationFrame(loop);
 }
-</style>

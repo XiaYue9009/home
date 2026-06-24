@@ -12,7 +12,9 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "sync:lol-mid": "node scripts/sync-lol-mid-heroes.mjs",
+    "prebuild": "pnpm sync:lol-mid"
   },
   "dependencies": {
     "@astrojs/mdx": "^3.1.9",
