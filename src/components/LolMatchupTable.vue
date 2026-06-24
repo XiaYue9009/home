@@ -178,7 +178,21 @@ const filterSummary = computed(() => {
   return parts.length ? parts.join(' · ') : '当前条件';
 });
 
-const filteredHeroes = computed(() => filterCatalog(heroes.value));
+const filteredHeroes = computed(() => {
+  const list = filterCatalog(heroes.value);
+  const counts = enemyAddCounts.value;
+
+  return [...list].sort((a, b) => {
+    const aCount = counts.get(a.id) || 0;
+    const bCount = counts.get(b.id) || 0;
+    if (aCount !== bCount) {
+      if (aCount === 0) return -1;
+      if (bCount === 0) return 1;
+      return aCount - bCount;
+    }
+    return (a.name || '').localeCompare(b.name || '', 'zh-CN');
+  });
+});
 const filteredLoadoutItems = computed(() =>
   filterLoadoutItems(
     items.value,
@@ -214,6 +228,19 @@ const loadoutSecondaryStyle = computed(() => {
 const activeRow = computed(() =>
   rows.value.find((row) => row.id === picker.value?.rowId) || null,
 );
+
+const enemyAddCounts = computed(() => {
+  const activeRowId = picker.value?.type === 'hero' ? picker.value.rowId : null;
+  const counts = new Map();
+
+  for (const row of rows.value) {
+    if (!row.enemyId) continue;
+    if (row.id === activeRowId) continue;
+    counts.set(row.enemyId, (counts.get(row.enemyId) || 0) + 1);
+  }
+
+  return counts;
+});
 
 const pickerTitle = computed(() => {
   if (!picker.value) return '';
@@ -362,9 +389,19 @@ function openLoadoutPicker(rowId) {
   itemAttributes.value = [];
 }
 
+let searchDebounceTimer;
+
 function applySearch() {
+  clearTimeout(searchDebounceTimer);
   appliedQuery.value = searchInput.value.trim().toLowerCase();
 }
+
+watch(searchInput, (value) => {
+  clearTimeout(searchDebounceTimer);
+  searchDebounceTimer = setTimeout(() => {
+    appliedQuery.value = value.trim().toLowerCase();
+  }, 250);
+});
 
 function setDifficultySort(direction) {
   difficultySort.value = difficultySort.value === direction ? '' : direction;
@@ -586,7 +623,25 @@ function sortedSecondaryRunes(row) {
 
 function addRow() {
   if (!ensureCanEdit()) return;
-  rows.value.push(createEmptyMatchupRow('', lookup.value));
+  const row = createEmptyMatchupRow('', lookup.value);
+  row.difficulty = 'hard';
+  rows.value.unshift(row);
+}
+
+const heroAddLegend = [
+  { count: 1, label: '1 次' },
+  { count: 2, label: '2 次' },
+  { count: 3, label: '3 次' },
+  { count: 4, label: '4 次+' },
+];
+
+function heroAddCount(heroId) {
+  return Math.min(enemyAddCounts.value.get(heroId) || 0, 4);
+}
+
+function heroOptionAddedClass(heroId) {
+  const count = heroAddCount(heroId);
+  return count ? `lol-matchup-panel__hero-option--added-${count}` : '';
 }
 
 function copyLoadout(row) {
@@ -706,6 +761,7 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
+  clearTimeout(searchDebounceTimer);
   tableResizeObserver?.disconnect();
 });
 </script>
@@ -728,35 +784,50 @@ onUnmounted(() => {
         <el-input
           v-model="searchInput"
           class="lol-matchup-panel__search-input"
+          size="small"
           placeholder="搜索称呼或名字"
           clearable
           :disabled="loading"
           @keyup.enter="applySearch"
+          @clear="applySearch"
         >
-          <template #append>
-            <el-button :disabled="loading" @click="applySearch">搜索</el-button>
+          <template #prefix>
+            <svg
+              class="lol-matchup-panel__search-icon"
+              viewBox="0 0 20 20"
+              width="14"
+              height="14"
+              aria-hidden="true"
+            >
+              <path
+                fill="currentColor"
+                d="M8.5 3a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11Zm0 1.5a4 4 0 1 0 0 8 4 4 0 0 0 0-8Zm6.03 9.72a.75.75 0 0 1 1.06 1.06l-2.2 2.2a.75.75 0 0 1-1.06-1.06l2.2-2.2Z"
+              />
+            </svg>
           </template>
         </el-input>
         <MatchupDifficultySelect
           v-model="difficultyFilter"
-          size="md"
+          class="lol-matchup-panel__difficulty-filter"
+          size="sm"
           variant="select"
           placeholder="全部难度"
           :disabled="loading"
         />
         <div v-if="canEdit" class="lol-matchup-panel__auth lol-matchup-panel__auth--unlocked">
           <el-tag type="success" size="small" effect="plain">已解锁编辑</el-tag>
-          <el-button size="small" @click="lockEdit">锁定</el-button>
         </div>
-        <div v-else class="lol-matchup-panel__auth">
+        <div v-else class="lol-matchup-panel__auth lol-matchup-panel__auth--locked">
           <el-input
             v-model="editPasswordInput"
+            class="lol-matchup-panel__auth-input"
             type="password"
             inputmode="numeric"
             autocomplete="off"
             size="small"
             placeholder="编辑密码"
             aria-label="编辑密码"
+            :aria-invalid="Boolean(editAuthError)"
             @keyup.enter="unlockEdit"
           />
           <el-button
@@ -771,6 +842,7 @@ onUnmounted(() => {
             {{ editAuthError }}
           </span>
         </div>
+        <el-button v-if="canEdit" size="small" @click="lockEdit">锁定</el-button>
         <el-button
           type="primary"
           size="small"
@@ -814,7 +886,7 @@ onUnmounted(() => {
             <span class="lol-matchup-panel__no-result">没有匹配{{ filterSummary }}的结果</span>
           </template>
 
-          <el-table-column label="英雄" min-width="168" class-name="lol-matchup-panel__hero-cell">
+          <el-table-column label="英雄" min-width="160" class-name="lol-matchup-panel__hero-cell">
             <template #default="{ row }">
               <button
                 v-if="canEdit"
@@ -908,7 +980,7 @@ onUnmounted(() => {
             </template>
           </el-table-column>
 
-          <el-table-column label="候选技能" min-width="150" class-name="lol-matchup-panel__skills-candidates-cell">
+          <el-table-column label="候选技能" min-width="160" class-name="lol-matchup-panel__skills-candidates-cell">
             <template #default="{ row }">
               <div class="lol-matchup-panel__candidates-wrap">
                 <div class="lol-matchup-panel__icons lol-matchup-panel__icons--candidates">
@@ -1105,7 +1177,23 @@ onUnmounted(() => {
         >
         <template v-if="picker.type === 'hero'">
           <div class="lol-matchup-panel__picker-head">
-            <h3>{{ pickerTitle }}</h3>
+            <div class="lol-matchup-panel__picker-head-main">
+              <h3>{{ pickerTitle }}</h3>
+              <div class="lol-matchup-panel__hero-legend" role="note" aria-label="背景色说明">
+                <span
+                  v-for="item in heroAddLegend"
+                  :key="item.count"
+                  class="lol-matchup-panel__hero-legend-item"
+                >
+                  <span
+                    class="lol-matchup-panel__hero-legend-swatch"
+                    :class="`lol-matchup-panel__hero-legend-swatch--${item.count}`"
+                    aria-hidden="true"
+                  />
+                  {{ item.label }}
+                </span>
+              </div>
+            </div>
             <button type="button" class="lol-matchup-panel__picker-close" aria-label="关闭" @click="closePicker">
               ×
             </button>
@@ -1123,6 +1211,8 @@ onUnmounted(() => {
               :key="hero.id"
               type="button"
               class="lol-matchup-panel__hero-option"
+              :class="heroOptionAddedClass(hero.id)"
+              :aria-label="heroAddCount(hero.id) ? `${hero.name}（已添加 ${heroAddCount(hero.id)} 次）` : hero.name"
               @click="selectHero(hero)"
             >
               <img :src="hero.icon" :alt="hero.name" />
@@ -1482,8 +1572,8 @@ onUnmounted(() => {
 
     .lol-matchup-panel__tools {
       display: flex;
-      align-items: stretch;
-      gap: 0.55rem;
+      align-items: center;
+      gap: var(--lol-toolbar-gap);
       width: 100%;
 
       @media (min-width: 640px) {
@@ -1696,13 +1786,36 @@ onUnmounted(() => {
   }
 
   &__tools {
+    --lol-toolbar-gap: 0.5rem;
+
     display: flex;
-    align-items: stretch;
-    gap: 0.5rem;
+    align-items: center;
+    gap: var(--lol-toolbar-gap);
     flex-wrap: wrap;
 
     @media (min-width: 640px) {
       flex-wrap: nowrap;
+    }
+
+    :deep(.el-button) {
+      min-height: 2rem;
+      min-width: 4.75rem;
+      padding-inline: 1.25rem;
+      border-radius: 9999px;
+      font-weight: 600;
+    }
+
+    :deep(.el-input__wrapper),
+    :deep(.el-select__wrapper) {
+      min-height: 2rem;
+      border-radius: 9999px;
+      box-shadow: none;
+      background: color-mix(in srgb, var(--color-glass-bg) 94%, transparent);
+    }
+
+    :deep(.el-input__wrapper.is-focus),
+    :deep(.el-select__wrapper.is-focused) {
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent) 10%, transparent);
     }
 
     .lol-matchup-panel__action--primary {
@@ -1714,30 +1827,27 @@ onUnmounted(() => {
   &__auth {
     display: inline-flex;
     align-items: center;
-    gap: 0.4rem;
-    flex-wrap: wrap;
-    min-height: 2.125rem;
+    gap: var(--lol-toolbar-gap, 0.5rem);
+    flex-shrink: 0;
+
+    &--locked {
+      flex-wrap: nowrap;
+    }
 
     &--unlocked {
-      flex-wrap: nowrap;
+      :deep(.el-tag) {
+        display: inline-flex;
+        align-items: center;
+        height: 2rem;
+        border-radius: 9999px;
+        white-space: nowrap;
+      }
     }
   }
 
   &__auth-input {
-    width: 6.5rem;
-    min-height: 2.125rem;
-    padding: 0.4rem 0.75rem;
-    border: 1px solid var(--color-border);
-    border-radius: 9999px;
-    background: color-mix(in srgb, var(--color-glass-bg) 94%, transparent);
-    font-size: 0.8125rem;
-    color: var(--color-heading);
-    outline: none;
-
-    &:focus {
-      border-color: color-mix(in srgb, var(--color-accent) 45%, transparent);
-      box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent) 10%, transparent);
-    }
+    width: 6.75rem;
+    flex-shrink: 0;
   }
 
   &__auth-badge {
@@ -1754,9 +1864,11 @@ onUnmounted(() => {
   }
 
   &__auth-error {
-    width: 100%;
-    font-size: 0.75rem;
+    flex-shrink: 0;
+    font-size: 0.6875rem;
+    line-height: 1.2;
     color: #dc2626;
+    white-space: nowrap;
   }
 
   &__ops-locked {
@@ -1846,10 +1958,36 @@ onUnmounted(() => {
   }
 
   &__search-input {
-    width: 100%;
+    flex: 1;
+    min-width: min(100%, 9rem);
+    max-width: 14rem;
 
     @media (min-width: 640px) {
-      width: 11.5rem;
+      flex: none;
+      width: 10.5rem;
+    }
+
+    :deep(.el-input__prefix) {
+      color: var(--color-text-subtle);
+    }
+  }
+
+  &__search-icon {
+    display: block;
+    flex-shrink: 0;
+  }
+
+  &__difficulty-filter {
+    flex-shrink: 0;
+    width: 6.25rem;
+
+    :deep(.el-select__wrapper) {
+      padding-inline: 0.65rem;
+    }
+
+    :deep(.el-select__placeholder),
+    :deep(.el-select__selected-item) {
+      font-size: 0.8125rem;
     }
   }
 
@@ -1975,11 +2113,13 @@ onUnmounted(() => {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.15rem 0.35rem 0.15rem 0.15rem;
+    width: 100%;
+    padding: 0.15rem;
     border: 1px solid transparent;
-    border-radius: 9999px;
+    border-radius: 0.5rem;
     background: transparent;
     cursor: pointer;
+    text-align: left;
 
     &:hover {
       border-color: var(--color-border);
@@ -1996,7 +2136,7 @@ onUnmounted(() => {
   &__hero-placeholder {
     width: 3.75rem;
     height: 3.75rem;
-    border-radius: 9999px;
+    border-radius: 0.375rem;
     flex-shrink: 0;
   }
 
@@ -2009,7 +2149,8 @@ onUnmounted(() => {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background: color-mix(in srgb, var(--color-glass-bg) 90%, transparent);
+    border: 1px solid var(--color-border);
+    background: var(--color-glass-bg);
     color: var(--color-text-subtle);
     font-weight: 600;
   }
@@ -2551,6 +2692,7 @@ onUnmounted(() => {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 0.5rem;
     margin-bottom: 0.75rem;
 
     h3 {
@@ -2558,6 +2700,60 @@ onUnmounted(() => {
       font-size: 1rem;
       font-weight: 600;
       color: var(--color-heading);
+    }
+  }
+
+  &__picker-head-main {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.45rem 0.75rem;
+    min-width: 0;
+    flex: 1;
+  }
+
+  &__hero-legend {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.35rem 0.55rem;
+  }
+
+  &__hero-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.28rem;
+    font-size: 0.6875rem;
+    line-height: 1.2;
+    color: var(--color-text-subtle);
+    white-space: nowrap;
+  }
+
+  &__hero-legend-swatch {
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 0.2rem;
+    border: 1px solid var(--color-border);
+    flex-shrink: 0;
+
+    &--1 {
+      background: color-mix(in srgb, #93c5fd 42%, var(--color-glass-bg));
+      border-color: color-mix(in srgb, #60a5fa 32%, var(--color-border));
+    }
+
+    &--2 {
+      background: color-mix(in srgb, #86efac 42%, var(--color-glass-bg));
+      border-color: color-mix(in srgb, #4ade80 32%, var(--color-border));
+    }
+
+    &--3 {
+      background: color-mix(in srgb, #fcd34d 44%, var(--color-glass-bg));
+      border-color: color-mix(in srgb, #fbbf24 34%, var(--color-border));
+    }
+
+    &--4 {
+      background: color-mix(in srgb, #fca5a5 46%, var(--color-glass-bg));
+      border-color: color-mix(in srgb, #f87171 36%, var(--color-border));
     }
   }
 
@@ -2631,6 +2827,46 @@ onUnmounted(() => {
     &.is-disabled:not(.is-selected) {
       opacity: 0.38;
       cursor: not-allowed;
+    }
+
+    &--added-1 {
+      background: color-mix(in srgb, #93c5fd 42%, var(--color-glass-bg));
+      border-color: color-mix(in srgb, #60a5fa 32%, var(--color-border));
+    }
+
+    &--added-2 {
+      background: color-mix(in srgb, #86efac 42%, var(--color-glass-bg));
+      border-color: color-mix(in srgb, #4ade80 32%, var(--color-border));
+    }
+
+    &--added-3 {
+      background: color-mix(in srgb, #fcd34d 44%, var(--color-glass-bg));
+      border-color: color-mix(in srgb, #fbbf24 34%, var(--color-border));
+    }
+
+    &--added-4 {
+      background: color-mix(in srgb, #fca5a5 46%, var(--color-glass-bg));
+      border-color: color-mix(in srgb, #f87171 36%, var(--color-border));
+    }
+
+    &--added-1:hover {
+      background: color-mix(in srgb, #93c5fd 52%, var(--color-glass-bg));
+      border-color: color-mix(in srgb, #3b82f6 42%, var(--color-border));
+    }
+
+    &--added-2:hover {
+      background: color-mix(in srgb, #86efac 52%, var(--color-glass-bg));
+      border-color: color-mix(in srgb, #22c55e 42%, var(--color-border));
+    }
+
+    &--added-3:hover {
+      background: color-mix(in srgb, #fcd34d 54%, var(--color-glass-bg));
+      border-color: color-mix(in srgb, #f59e0b 44%, var(--color-border));
+    }
+
+    &--added-4:hover {
+      background: color-mix(in srgb, #fca5a5 56%, var(--color-glass-bg));
+      border-color: color-mix(in srgb, #ef4444 46%, var(--color-border));
     }
 
     &--keystone img {
