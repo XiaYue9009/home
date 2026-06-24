@@ -19,6 +19,11 @@ import {
   getDifficultyLabel,
 } from '../config/lol-matchup-difficulty.js';
 import {
+  LOL_MATCHUP_EDIT_PASSWORD,
+  isMatchupEditUnlocked,
+  setMatchupEditUnlocked,
+} from '../config/lol-matchup-edit.js';
+import {
   DEFAULT_ITEM_STAGE,
   ITEM_ATTRIBUTE_GROUPS,
   ITEM_STAGE_OPTIONS,
@@ -83,6 +88,9 @@ const pendingDeleteRow = ref(null);
 const syncStatus = ref('idle');
 const hydrating = ref(true);
 const isMounted = ref(false);
+const canEdit = ref(false);
+const editPasswordInput = ref('');
+const editAuthError = ref('');
 
 const syncStatusLabel = computed(() => {
   if (!isCloudSyncEnabled()) return '仅本地';
@@ -237,7 +245,32 @@ function sanitizeRowSkills(row) {
   row.skillIds = createDefaultSkillIds();
 }
 
+function ensureCanEdit() {
+  return canEdit.value;
+}
+
+function unlockEdit() {
+  editAuthError.value = '';
+  if (editPasswordInput.value === LOL_MATCHUP_EDIT_PASSWORD) {
+    canEdit.value = true;
+    setMatchupEditUnlocked(true);
+    editPasswordInput.value = '';
+    return;
+  }
+  editAuthError.value = '密码错误';
+}
+
+function lockEdit() {
+  canEdit.value = false;
+  setMatchupEditUnlocked(false);
+  editPasswordInput.value = '';
+  editAuthError.value = '';
+  closePicker();
+  pendingDeleteRow.value = null;
+}
+
 function openCandidatePicker(rowId) {
+  if (!ensureCanEdit()) return;
   picker.value = { type: 'candidates', rowId };
   pickerQuery.value = '';
 }
@@ -267,6 +300,7 @@ function isCandidatePickerDisabled(spellId) {
 }
 
 function openLoadoutPicker(rowId) {
+  if (!ensureCanEdit()) return;
   const row = rows.value.find((entry) => entry.id === rowId);
   if (!row) return;
 
@@ -296,6 +330,7 @@ function setDifficultySort(direction) {
 }
 
 function openHeroPicker(rowId) {
+  if (!ensureCanEdit()) return;
   picker.value = { type: 'hero', rowId };
   pickerQuery.value = '';
 }
@@ -509,10 +544,12 @@ function sortedSecondaryRunes(row) {
 }
 
 function addRow() {
+  if (!ensureCanEdit()) return;
   rows.value.push(createEmptyMatchupRow('', lookup.value));
 }
 
 function copyLoadout(row) {
+  if (!ensureCanEdit()) return;
   loadoutClipboard.value = {
     primaryRuneIds: [...row.primaryRuneIds],
     secondaryRuneIds: [...row.secondaryRuneIds],
@@ -521,6 +558,7 @@ function copyLoadout(row) {
 }
 
 function pasteLoadout(row) {
+  if (!ensureCanEdit()) return;
   const data = loadoutClipboard.value;
   if (!data) return;
   const ordered = orderRuneLoadout(data.primaryRuneIds, data.secondaryRuneIds, runes.value);
@@ -530,6 +568,7 @@ function pasteLoadout(row) {
 }
 
 function confirmRemoveRow(row) {
+  if (!ensureCanEdit()) return;
   pendingDeleteRow.value = row;
 }
 
@@ -544,7 +583,7 @@ let saveTimer;
 watch(
   rows,
   (value) => {
-    if (!props.heroId || loading.value || hydrating.value) return;
+    if (!props.heroId || loading.value || hydrating.value || !canEdit.value) return;
     clearTimeout(saveTimer);
     saveTimer = setTimeout(async () => {
       if (isCloudSyncEnabled()) syncStatus.value = 'syncing';
@@ -558,6 +597,7 @@ watch(
 
 onMounted(async () => {
   isMounted.value = true;
+  canEdit.value = isMatchupEditUnlocked();
   if (isCloudSyncEnabled()) syncStatus.value = 'syncing';
 
   try {
@@ -640,10 +680,46 @@ onMounted(async () => {
           placeholder="全部难度"
           :disabled="loading"
         />
+        <div v-if="canEdit" class="lol-matchup-panel__auth lol-matchup-panel__auth--unlocked">
+          <span class="lol-matchup-panel__auth-badge">已解锁编辑</span>
+          <button
+            type="button"
+            class="lol-matchup-panel__action lol-matchup-panel__action--lock"
+            @click="lockEdit"
+          >
+            锁定
+          </button>
+        </div>
+        <form
+          v-else
+          class="lol-matchup-panel__auth"
+          @submit.prevent="unlockEdit"
+        >
+          <input
+            v-model="editPasswordInput"
+            type="password"
+            inputmode="numeric"
+            autocomplete="off"
+            class="lol-matchup-panel__auth-input"
+            placeholder="编辑密码"
+            aria-label="编辑密码"
+          />
+          <button
+            type="submit"
+            class="lol-matchup-panel__action lol-matchup-panel__action--unlock"
+            :disabled="loading || !editPasswordInput"
+          >
+            解锁
+          </button>
+          <span v-if="editAuthError" class="lol-matchup-panel__auth-error" role="alert">
+            {{ editAuthError }}
+          </span>
+        </form>
         <button
           type="button"
           class="lol-matchup-panel__action lol-matchup-panel__action--primary"
-          :disabled="loading"
+          :disabled="loading || !canEdit"
+          :title="canEdit ? '新增对线笔记' : '请先输入密码解锁编辑'"
           @click="addRow"
         >
           新增
@@ -657,7 +733,13 @@ onMounted(async () => {
 
     <div v-else-if="rows.length === 0" class="lol-matchup-panel__empty">
       <p class="text-muted">还没有对线数据。</p>
-      <button type="button" class="lol-matchup-panel__action lol-matchup-panel__action--primary mt-4" @click="addRow">
+      <button
+        type="button"
+        class="lol-matchup-panel__action lol-matchup-panel__action--primary mt-4"
+        :disabled="!canEdit"
+        :title="canEdit ? '新增对线笔记' : '请先输入密码解锁编辑'"
+        @click="addRow"
+      >
         新增
       </button>
     </div>
@@ -715,6 +797,7 @@ onMounted(async () => {
           <tr v-for="row in filteredRows" :key="row.id">
             <td class="lol-matchup-panel__hero-cell">
               <button
+                v-if="canEdit"
                 type="button"
                 class="lol-matchup-panel__hero-btn"
                 :title="heroForRow(row) ? `${heroForRow(row).fullName} ${heroForRow(row).name}` : '选择英雄'"
@@ -735,6 +818,26 @@ onMounted(async () => {
                   <template v-else>{{ row.enemyName || '选择英雄' }}</template>
                 </span>
               </button>
+              <div
+                v-else
+                class="lol-matchup-panel__hero-btn lol-matchup-panel__hero-btn--readonly"
+                :title="heroForRow(row) ? `${heroForRow(row).fullName} ${heroForRow(row).name}` : row.enemyName || '未选择英雄'"
+              >
+                <img
+                  v-if="heroForRow(row)"
+                  :src="heroForRow(row).icon"
+                  :alt="heroForRow(row).name"
+                  class="lol-matchup-panel__hero-icon"
+                />
+                <span v-else class="lol-matchup-panel__hero-placeholder">?</span>
+                <span class="lol-matchup-panel__hero-name">
+                  <template v-if="heroForRow(row)">
+                    <span class="lol-matchup-panel__hero-epithet">{{ heroForRow(row).fullName }}</span>
+                    <span class="lol-matchup-panel__hero-title">{{ heroForRow(row).name }}</span>
+                  </template>
+                  <template v-else>{{ row.enemyName || '—' }}</template>
+                </span>
+              </div>
             </td>
 
             <td class="lol-matchup-panel__difficulty-cell">
@@ -743,6 +846,7 @@ onMounted(async () => {
                 size="sm"
                 variant="plain"
                 :allow-empty="false"
+                :disabled="!canEdit"
               />
             </td>
 
@@ -768,6 +872,7 @@ onMounted(async () => {
                   </span>
                 </div>
                 <button
+                  v-if="canEdit"
                   type="button"
                   class="lol-matchup-panel__candidates-edit"
                   title="调整候选技能（最多4个）"
@@ -780,6 +885,7 @@ onMounted(async () => {
 
             <td class="lol-matchup-panel__runes-cell">
               <button
+                v-if="canEdit"
                 type="button"
                 class="lol-matchup-panel__loadout-btn"
                 title="配置天赋"
@@ -816,10 +922,43 @@ onMounted(async () => {
                   </div>
                 </div>
               </button>
+              <div v-else class="lol-matchup-panel__loadout-btn lol-matchup-panel__loadout-btn--readonly">
+                <div class="lol-matchup-panel__rune-rows">
+                  <div class="lol-matchup-panel__rune-row">
+                    <span class="lol-matchup-panel__rune-label">主</span>
+                    <div class="lol-matchup-panel__icons">
+                      <span
+                        v-for="runeId in sortedPrimaryRunes(row)"
+                        :key="`p-read-${runeId}`"
+                        class="lol-matchup-panel__icon-btn lol-matchup-panel__icon-btn--readonly"
+                        :class="{ 'lol-matchup-panel__icon-btn--keystone': isKeystoneRune(runeId) }"
+                        :title="getRuneById(runes, runeId)?.name"
+                      >
+                        <img :src="getRuneById(runes, runeId)?.icon" :alt="getRuneById(runes, runeId)?.name" />
+                      </span>
+                      <span v-if="!row.primaryRuneIds.length" class="lol-matchup-panel__loadout-empty">—</span>
+                    </div>
+                  </div>
+                  <div class="lol-matchup-panel__rune-row">
+                    <span class="lol-matchup-panel__rune-label">副</span>
+                    <div class="lol-matchup-panel__icons">
+                      <span
+                        v-for="runeId in sortedSecondaryRunes(row)"
+                        :key="`s-read-${runeId}`"
+                        class="lol-matchup-panel__icon-btn lol-matchup-panel__icon-btn--readonly"
+                        :title="getRuneById(runes, runeId)?.name"
+                      >
+                        <img :src="getRuneById(runes, runeId)?.icon" :alt="getRuneById(runes, runeId)?.name" />
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </td>
 
             <td class="lol-matchup-panel__items-cell">
               <button
+                v-if="canEdit"
                 type="button"
                 class="lol-matchup-panel__loadout-btn"
                 title="配置装备"
@@ -837,10 +976,23 @@ onMounted(async () => {
                   <span v-if="!row.itemIds.length" class="lol-matchup-panel__loadout-empty">+</span>
                 </div>
               </button>
+              <div v-else class="lol-matchup-panel__loadout-btn lol-matchup-panel__loadout-btn--readonly">
+                <div class="lol-matchup-panel__icons">
+                  <span
+                    v-for="itemId in row.itemIds"
+                    :key="`item-read-${itemId}`"
+                    class="lol-matchup-panel__icon-btn lol-matchup-panel__icon-btn--item lol-matchup-panel__icon-btn--readonly"
+                    :title="getItemById(items, itemId)?.name"
+                  >
+                    <img :src="getItemById(items, itemId)?.icon" :alt="getItemById(items, itemId)?.name" />
+                  </span>
+                  <span v-if="!row.itemIds.length" class="lol-matchup-panel__loadout-empty">—</span>
+                </div>
+              </div>
             </td>
 
             <td class="lol-matchup-panel__ops-cell">
-              <div class="lol-matchup-panel__ops">
+              <div v-if="canEdit" class="lol-matchup-panel__ops">
                 <div class="lol-matchup-panel__ops-row">
                   <button
                     type="button"
@@ -871,6 +1023,7 @@ onMounted(async () => {
                   </button>
                 </div>
               </div>
+              <span v-else class="lol-matchup-panel__ops-locked">只读</span>
             </td>
           </tr>
         </tbody>
@@ -879,7 +1032,13 @@ onMounted(async () => {
     </div>
 
     <div v-if="!compact && !loading && rows.length" class="lol-matchup-panel__foot">
-      <button type="button" class="lol-matchup-panel__action lol-matchup-panel__action--primary" @click="addRow">
+      <button
+        type="button"
+        class="lol-matchup-panel__action lol-matchup-panel__action--primary"
+        :disabled="!canEdit"
+        :title="canEdit ? '新增对线笔记' : '请先输入密码解锁编辑'"
+        @click="addRow"
+      >
         新增
       </button>
     </div>
@@ -1496,6 +1655,64 @@ onMounted(async () => {
     }
   }
 
+  &__auth {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    min-height: 2.125rem;
+
+    &--unlocked {
+      flex-wrap: nowrap;
+    }
+  }
+
+  &__auth-input {
+    width: 6.5rem;
+    min-height: 2.125rem;
+    padding: 0.4rem 0.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: 9999px;
+    background: color-mix(in srgb, var(--color-glass-bg) 94%, transparent);
+    font-size: 0.8125rem;
+    color: var(--color-heading);
+    outline: none;
+
+    &:focus {
+      border-color: color-mix(in srgb, var(--color-accent) 45%, transparent);
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent) 10%, transparent);
+    }
+  }
+
+  &__auth-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.15rem 0.55rem;
+    border-radius: 9999px;
+    border: 1px solid color-mix(in srgb, #059669 35%, var(--color-border));
+    background: color-mix(in srgb, #059669 10%, transparent);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #059669;
+    white-space: nowrap;
+  }
+
+  &__auth-error {
+    width: 100%;
+    font-size: 0.75rem;
+    color: #dc2626;
+  }
+
+  &__ops-locked {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--color-text-subtle);
+  }
+
   &__search-group {
     display: flex;
     align-items: stretch;
@@ -1692,6 +1909,11 @@ onMounted(async () => {
     &:hover {
       border-color: var(--color-border);
       background: color-mix(in srgb, var(--color-glass-bg) 80%, transparent);
+    }
+
+    &--readonly {
+      cursor: default;
+      pointer-events: none;
     }
   }
 
@@ -1937,6 +2159,11 @@ onMounted(async () => {
       border-color: var(--color-border);
       background: color-mix(in srgb, var(--color-glass-bg) 80%, transparent);
     }
+
+    &--readonly {
+      cursor: default;
+      pointer-events: none;
+    }
   }
 
   &__loadout-empty {
@@ -2061,6 +2288,25 @@ onMounted(async () => {
       &:hover:not(:disabled) {
         background: color-mix(in srgb, var(--color-accent) 16%, transparent);
       }
+    }
+
+    &--unlock,
+    &--lock {
+      flex-shrink: 0;
+      min-height: 2.125rem;
+      padding-inline: 0.875rem;
+      border: 1px solid var(--color-border);
+      background: color-mix(in srgb, var(--color-glass-bg) 94%, transparent);
+      font-weight: 600;
+    }
+
+    &--unlock:hover:not(:disabled) {
+      border-color: color-mix(in srgb, var(--color-accent) 38%, transparent);
+      background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+    }
+
+    &--lock:hover:not(:disabled) {
+      border-color: color-mix(in srgb, var(--color-text-muted) 35%, var(--color-border));
     }
 
     &--primary {
