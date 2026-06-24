@@ -55,6 +55,35 @@ tags: [Astro, Vue]
 2. 打开 [giscus.app](https://giscus.app/zh-CN)，按向导生成配置
 3. 复制 `.env.example` 为 `.env`，填入 `PUBLIC_GISCUS_*` 变量
 
+## LOL 对线笔记云端同步（Supabase）
+
+对线表格默认保存在浏览器 `localStorage`。配置 Supabase 后，数据会同步到云端，任意设备打开都是同一份笔记。
+
+### 1. 创建 Supabase 项目
+
+1. 打开 [supabase.com](https://supabase.com) 注册并新建项目
+2. 进入 **SQL Editor**，执行仓库中的 `supabase/lol_matchups.sql`
+3. 在 **Project Settings → API** 复制：
+   - **Project URL** → `PUBLIC_SUPABASE_URL`
+   - **anon public** key → `PUBLIC_SUPABASE_ANON_KEY`
+
+### 2. 本地配置
+
+复制 `.env.example` 为 `.env`，填入上述两个变量，重启 `pnpm dev`。
+
+未配置时功能不变，仍仅本地保存。
+
+### 3. 线上部署
+
+在 GitHub 仓库 **Settings → Secrets and variables → Actions** 中添加：
+
+- `PUBLIC_SUPABASE_URL`
+- `PUBLIC_SUPABASE_ANON_KEY`
+
+推送 `main` 后重新部署即可。线上与本地修改会自动合并（以较新的 `updated_at` 为准）。
+
+> 说明：anon key 会打包进前端，此表仅存放对线笔记，请勿存放敏感信息。
+
 ## 部署到 GitHub Pages
 
 ### 1. 修改站点地址

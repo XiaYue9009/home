@@ -44,11 +44,11 @@ import {
   createEmptyMatchupRow,
   fetchLolHeroList,
   fetchMidHeroIds,
-  loadStoredMatchups,
-  matchupStorageKey,
+  isCloudSyncEnabled,
   mergeMidMatchupRows,
   normalizeMatchups,
-  saveStoredMatchups,
+  persistMatchups,
+  resolveMatchupSource,
 } from '../lib/lol-matchup.js';
 
 const props = defineProps({
@@ -78,6 +78,21 @@ const activeItemSlot = ref(0);
 const runeTooltip = ref(null);
 const runeTooltipPos = ref({ top: 0, left: 0 });
 const pendingDeleteRow = ref(null);
+const syncStatus = ref('idle');
+
+const syncStatusLabel = computed(() => {
+  if (!isCloudSyncEnabled()) return '仅本地';
+  if (syncStatus.value === 'syncing') return '同步中…';
+  if (syncStatus.value === 'error') return '同步失败';
+  return '云端';
+});
+
+const syncStatusTone = computed(() => {
+  if (!isCloudSyncEnabled()) return 'local';
+  if (syncStatus.value === 'syncing') return 'syncing';
+  if (syncStatus.value === 'error') return 'error';
+  return 'cloud';
+});
 
 const lookup = computed(() => {
   const heroLookup = buildHeroLookup(heroes.value);
@@ -518,12 +533,19 @@ watch(
   (value) => {
     if (!props.heroId || loading.value) return;
     clearTimeout(saveTimer);
-    saveTimer = setTimeout(() => saveStoredMatchups(props.heroId, value), 250);
+    saveTimer = setTimeout(async () => {
+      if (isCloudSyncEnabled()) syncStatus.value = 'syncing';
+      const result = await persistMatchups(props.heroId, value);
+      if (!isCloudSyncEnabled()) return;
+      syncStatus.value = result.ok ? 'synced' : 'error';
+    }, 250);
   },
   { deep: true },
 );
 
 onMounted(async () => {
+  if (isCloudSyncEnabled()) syncStatus.value = 'syncing';
+
   try {
     [heroes.value, runes.value, items.value] = await Promise.all([
       fetchLolHeroList(),
@@ -538,8 +560,7 @@ onMounted(async () => {
 
   const heroLookup = buildHeroLookup(heroes.value);
   const catalogs = { runes: runes.value, items: items.value };
-  const stored = loadStoredMatchups(props.heroId);
-  const source = stored?.length ? stored : props.matchups;
+  const source = await resolveMatchupSource(props.heroId, props.matchups);
   let normalized = normalizeMatchups(source, heroLookup, catalogs);
 
   const midHeroIds = await fetchMidHeroIds();
@@ -553,7 +574,12 @@ onMounted(async () => {
   loading.value = false;
 
   if (props.heroId && normalized.length) {
-    saveStoredMatchups(props.heroId, normalized);
+    const result = await persistMatchups(props.heroId, normalized);
+    if (isCloudSyncEnabled()) {
+      syncStatus.value = result.ok ? 'synced' : 'error';
+    }
+  } else if (isCloudSyncEnabled()) {
+    syncStatus.value = 'synced';
   }
 });
 </script>
@@ -562,11 +588,19 @@ onMounted(async () => {
   <section class="lol-matchup-panel glass-card overflow-hidden" :class="{ 'lol-matchup-panel--compact': compact }">
     <div class="lol-matchup-panel__head">
       <div class="lol-matchup-panel__title-wrap">
-        <h2 class="font-display font-semibold text-heading">对线笔记</h2>
+        <div class="lol-matchup-panel__title-row">
+          <h2 class="font-display font-semibold text-heading">对线笔记</h2>
+          <span
+            class="lol-matchup-panel__sync-badge"
+            :class="`lol-matchup-panel__sync-badge--${syncStatusTone}`"
+            :title="isCloudSyncEnabled() ? '已连接 Supabase 云端' : '未配置 Supabase，数据仅保存在本浏览器'"
+          >
+            {{ syncStatusLabel }}
+          </span>
+        </div>
         <p v-if="!compact" class="mt-1 text-sm text-muted">
           {{ heroName ? `${heroName} · ` : '' }}符文、召唤师技能与出装思路
         </p>
-        <p v-else class="lol-matchup-panel__subtitle text-muted">本地自动保存</p>
       </div>
       <div class="lol-matchup-panel__tools">
         <div class="lol-matchup-panel__search-group">
@@ -1214,10 +1248,13 @@ onMounted(async () => {
       line-height: 1.2;
     }
 
-    .lol-matchup-panel__subtitle {
-      margin: 0;
+    .lol-matchup-panel__title-row {
+      gap: 0.4rem;
+    }
+
+    .lol-matchup-panel__sync-badge {
       font-size: 0.6875rem;
-      line-height: 1.2;
+      padding: 0.1rem 0.45rem;
     }
 
     .lol-matchup-panel__tools {
@@ -1351,6 +1388,85 @@ onMounted(async () => {
       flex-direction: row;
       align-items: center;
       justify-content: space-between;
+    }
+  }
+
+  &__title-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  &__sync-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.15rem 0.55rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1.2;
+    border: 1px solid var(--color-border);
+    white-space: nowrap;
+
+    &::before {
+      content: '';
+      width: 0.4rem;
+      height: 0.4rem;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    &--local {
+      color: var(--color-text-muted);
+      background: color-mix(in srgb, var(--color-glass-bg) 90%, transparent);
+
+      &::before {
+        background: var(--color-text-muted);
+      }
+    }
+
+    &--cloud {
+      color: #059669;
+      border-color: color-mix(in srgb, #059669 35%, var(--color-border));
+      background: color-mix(in srgb, #059669 10%, transparent);
+
+      &::before {
+        background: #059669;
+      }
+    }
+
+    &--syncing {
+      color: #2563eb;
+      border-color: color-mix(in srgb, #2563eb 35%, var(--color-border));
+      background: color-mix(in srgb, #2563eb 10%, transparent);
+
+      &::before {
+        background: #2563eb;
+        animation: lol-sync-pulse 1s ease-in-out infinite;
+      }
+    }
+
+    &--error {
+      color: #dc2626;
+      border-color: color-mix(in srgb, #dc2626 35%, var(--color-border));
+      background: color-mix(in srgb, #dc2626 10%, transparent);
+
+      &::before {
+        background: #dc2626;
+      }
+    }
+  }
+
+  @keyframes lol-sync-pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+
+    50% {
+      opacity: 0.35;
     }
   }
 

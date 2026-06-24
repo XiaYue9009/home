@@ -13,6 +13,13 @@ import {
   parseRuneIds,
   splitRuneIds,
 } from './lol-game-data.js';
+import {
+  fetchCloudMatchups,
+  isCloudSyncEnabled,
+  upsertCloudMatchups,
+} from './matchup-cloud.js';
+
+export { isCloudSyncEnabled };
 
 const LOL_REFERER = 'https://101.qq.com/';
 const HERO_LIST_URL = 'https://game.gtimg.cn/images/lol/act/img/js/heroList/hero_list.js';
@@ -28,6 +35,84 @@ export function lolHeroIcon(alias) {
 
 export function matchupStorageKey(heroId) {
   return `moonhome-lol-matchups-${heroId}`;
+}
+
+export function matchupMetaKey(heroId) {
+  return `moonhome-lol-matchups-meta-${heroId}`;
+}
+
+export function loadMatchupMeta(heroId) {
+  if (typeof localStorage === 'undefined') return null;
+
+  try {
+    const raw = localStorage.getItem(matchupMetaKey(heroId));
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveMatchupMeta(heroId, meta) {
+  if (typeof localStorage === 'undefined') return;
+
+  localStorage.setItem(matchupMetaKey(heroId), JSON.stringify(meta));
+}
+
+function parseUpdatedAt(value = '') {
+  const time = Date.parse(value);
+  return Number.isFinite(time) ? time : 0;
+}
+
+/** 从云端 / 本地缓存 / 静态默认数据中选择最新的一份 */
+export async function resolveMatchupSource(heroId, fallbackRows = []) {
+  const localRows = loadStoredMatchups(heroId);
+  const localUpdated = parseUpdatedAt(loadMatchupMeta(heroId)?.updatedAt);
+
+  if (!isCloudSyncEnabled()) {
+    return localRows?.length ? localRows : fallbackRows;
+  }
+
+  try {
+    const cloud = await fetchCloudMatchups(heroId);
+    const cloudUpdated = parseUpdatedAt(cloud?.updatedAt);
+    const hasCloudRows = Array.isArray(cloud?.rows) && cloud.rows.length > 0;
+    const hasLocalRows = Array.isArray(localRows) && localRows.length > 0;
+
+    if (hasCloudRows && (!hasLocalRows || cloudUpdated >= localUpdated)) {
+      saveStoredMatchups(heroId, cloud.rows);
+      saveMatchupMeta(heroId, { updatedAt: cloud.updatedAt, source: 'cloud' });
+      return cloud.rows;
+    }
+
+    const source = hasLocalRows ? localRows : fallbackRows;
+    if (source.length && (!hasCloudRows || localUpdated > cloudUpdated)) {
+      const syncedAt = await upsertCloudMatchups(heroId, source);
+      saveMatchupMeta(heroId, { updatedAt: syncedAt, source: 'cloud' });
+    }
+
+    return source;
+  } catch {
+    return localRows?.length ? localRows : fallbackRows;
+  }
+}
+
+/** 写入本地缓存，并同步到云端 */
+export async function persistMatchups(heroId, rows) {
+  const updatedAt = new Date().toISOString();
+  saveStoredMatchups(heroId, rows);
+  saveMatchupMeta(heroId, { updatedAt, source: 'local' });
+
+  if (!isCloudSyncEnabled()) {
+    return { ok: true, cloud: false };
+  }
+
+  try {
+    const syncedAt = await upsertCloudMatchups(heroId, rows);
+    saveMatchupMeta(heroId, { updatedAt: syncedAt, source: 'cloud' });
+    return { ok: true, cloud: true };
+  } catch (error) {
+    return { ok: false, cloud: true, error };
+  }
 }
 
 export async function fetchLolHeroList() {
