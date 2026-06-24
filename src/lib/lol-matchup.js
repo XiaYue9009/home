@@ -99,7 +99,7 @@ export function compactRowsForStorage(rows = []) {
   }));
 }
 
-/** 从云端 / 本地缓存 / 静态默认数据中选择最新的一份 */
+/** 从云端 / 本地缓存 / 静态默认数据中选择最新的一份（只读，不写入云端） */
 export async function resolveMatchupSource(heroId, fallbackRows = []) {
   const localRows = loadStoredMatchups(heroId);
   const localUpdated = parseUpdatedAt(loadMatchupMeta(heroId)?.updatedAt);
@@ -115,20 +115,13 @@ export async function resolveMatchupSource(heroId, fallbackRows = []) {
     const hasLocalRows = Array.isArray(localRows) && localRows.length > 0;
 
     if (hasCloudRows && (!hasLocalRows || cloudUpdated >= localUpdated)) {
-      const compact = compactRowsForStorage(cloud.rows);
-      saveStoredMatchups(heroId, compact);
+      saveStoredMatchups(heroId, compactRowsForStorage(cloud.rows));
       saveMatchupMeta(heroId, { updatedAt: cloud.updatedAt, source: 'cloud' });
-      return compact.length ? compact : fallbackRows;
+      return cloud.rows;
     }
 
-    const source = hasLocalRows ? localRows : fallbackRows;
-    const compact = compactRowsForStorage(source);
-    if (compact.length && (!hasCloudRows || localUpdated > cloudUpdated)) {
-      const syncedAt = await upsertCloudMatchups(heroId, compact);
-      saveMatchupMeta(heroId, { updatedAt: syncedAt, source: 'cloud' });
-    }
-
-    return compact.length ? compact : fallbackRows;
+    if (hasLocalRows) return localRows;
+    return fallbackRows;
   } catch {
     return localRows?.length ? localRows : fallbackRows;
   }

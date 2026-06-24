@@ -28,3 +28,19 @@ export function compareDifficulty(a = '', b = '', direction = 'asc') {
   const diff = getDifficultyOrder(a) - getDifficultyOrder(b);
   return direction === 'desc' ? -diff : diff;
 }
+
+/** Element Plus el-tag type */
+export function getDifficultyTagType(id = '') {
+  switch (id) {
+    case 'hard':
+      return 'danger';
+    case 'harder':
+      return 'warning';
+    case 'easy':
+      return 'success';
+    case 'normal':
+      return 'primary';
+    default:
+      return 'info';
+  }
+}

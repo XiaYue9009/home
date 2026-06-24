@@ -1,0 +1,65 @@
+<script setup>
+defineProps({
+  hero: { type: Object, required: true },
+  heroMeta: { type: Object, required: true },
+});
+</script>
+
+<template>
+  <h1 class="lol-hero-summary__name font-display font-bold leading-tight">
+    <span>{{ hero.fullName }}</span>
+    <span>{{ hero.name }}</span>
+  </h1>
+  <div class="lol-hero-summary__meta">
+    <div class="lol-hero-summary__meta-item">
+      <span class="lol-hero-summary__meta-label">最近胜率</span>
+      <span class="lol-hero-summary__meta-value">{{ heroMeta.winRate }}</span>
+    </div>
+    <div class="lol-hero-summary__meta-item">
+      <span class="lol-hero-summary__meta-label">版本强度</span>
+      <span class="lol-hero-summary__meta-value">{{ heroMeta.tier }}</span>
+    </div>
+  </div>
+</template>
+
+<style scoped lang="scss">
+.lol-hero-summary__name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.625rem;
+  margin: 0;
+  font-size: 1.15rem;
+  line-height: 1.25;
+  color: inherit;
+}
+
+.lol-hero-summary__meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem 0.75rem;
+  margin-top: 0.45rem;
+}
+
+.lol-hero-summary__meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.lol-hero-summary__meta-label {
+  font-size: 0.6875rem;
+  color: rgba(17, 24, 39, 0.55);
+}
+
+.lol-hero-summary__meta-value {
+  border: 1px solid rgba(17, 24, 39, 0.1);
+  border-radius: 0.375rem;
+  background: rgba(255, 255, 255, 0.55);
+  padding: 0.25rem 0.45rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #111827;
+}
+</style>

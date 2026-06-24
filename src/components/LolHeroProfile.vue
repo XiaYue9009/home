@@ -1,0 +1,261 @@
+<script setup>
+import { getLolHeroMeta } from '../data/lol-hero-meta.js';
+import LolHeroSummary from './LolHeroSummary.vue';
+
+const props = defineProps({
+  hero: { type: Object, required: true },
+  compact: { type: Boolean, default: false },
+  barText: { type: Boolean, default: false },
+  artOnly: { type: Boolean, default: false },
+});
+
+const heroMeta = computed(() => getLolHeroMeta(props.hero.id));
+const splashAlt = computed(() => `${props.hero.fullName} ${props.hero.name}`.trim());
+const artSrc = computed(() => {
+  if (props.artOnly) {
+    return props.hero.portraitImg || props.hero.palmImg || props.hero.mainImg || props.hero.splash;
+  }
+  return props.hero.splash;
+});
+</script>
+
+<template>
+  <aside
+    class="lol-hero-profile"
+    :class="{
+      'lol-hero-profile--compact': compact,
+      'lol-hero-profile--bar-text': barText,
+      'lol-hero-profile--art-only': artOnly,
+    }"
+  >
+    <div v-if="barText" class="lol-hero-profile__bar-summary">
+      <LolHeroSummary :hero="hero" :hero-meta="heroMeta" />
+    </div>
+
+    <div v-else-if="compact" class="lol-hero-profile__art">
+      <img
+        :src="artSrc"
+        :alt="splashAlt"
+        class="lol-hero-profile__splash"
+        loading="eager"
+        decoding="async"
+      />
+      <div v-if="!artOnly" class="lol-hero-profile__overlay">
+        <LolHeroSummary :hero="hero" :hero-meta="heroMeta" />
+      </div>
+    </div>
+
+    <div v-else class="lol-hero-profile__layout">
+      <div class="lol-hero-profile__art">
+        <img
+          :src="hero.splash"
+          :alt="splashAlt"
+          class="lol-hero-profile__splash"
+          loading="eager"
+          decoding="async"
+        />
+      </div>
+      <div class="lol-hero-profile__body">
+        <h1 class="lol-hero-profile__name-row font-display text-[1.75rem] font-bold leading-tight text-[#f5f7fa]">
+          <span>{{ hero.fullName }}</span>
+          <span>{{ hero.name }}</span>
+        </h1>
+        <span class="lol-hero-profile__role">{{ hero.roleLabel }}</span>
+        <p v-if="hero.shortBio" class="lol-hero-profile__bio">{{ hero.shortBio }}</p>
+        <a
+          :href="hero.officialUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="lol-hero-profile__official text-link"
+        >
+          查看官网资料 →
+        </a>
+      </div>
+    </div>
+  </aside>
+</template>
+
+<style scoped lang="scss">
+.lol-hero-profile {
+  overflow: hidden;
+  border-radius: 1rem;
+  background: linear-gradient(180deg, #0f1923 0%, #132031 100%);
+  color: #e8edf2;
+  border: 1px solid rgba(201, 170, 113, 0.25);
+  box-shadow: 0 12px 24px rgba(8, 14, 22, 0.28);
+
+  &__layout {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__art {
+    position: relative;
+    overflow: hidden;
+    background: #0a1018;
+  }
+
+  &__overlay {
+    position: absolute;
+    right: 0.65rem;
+    bottom: 0.75rem;
+    left: 0.65rem;
+    padding: 0.65rem 0.75rem 0.7rem;
+    background: rgba(255, 255, 255, 0.48);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.38);
+    border-radius: 0.875rem;
+    color: #111827;
+  }
+
+  &__splash {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top center;
+  }
+
+  &__name-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.35rem 0.625rem;
+    margin: 0;
+    line-height: 1.25;
+  }
+
+  &__body {
+    padding: 1.25rem;
+  }
+
+  &__role {
+    display: inline-flex;
+    margin-top: 0.75rem;
+    border: 1px solid rgba(201, 170, 113, 0.45);
+    border-radius: 9999px;
+    padding: 0.15rem 0.65rem;
+    font-size: 0.75rem;
+    color: #c9aa71;
+  }
+
+  &__bio {
+    margin-top: 1rem;
+    font-size: 0.8125rem;
+    line-height: 1.65;
+    color: rgba(232, 237, 242, 0.72);
+  }
+
+  &__official {
+    display: inline-block;
+    margin-top: 1rem;
+    font-size: 0.8125rem;
+    color: #c9aa71 !important;
+  }
+
+  &--compact {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    border-radius: 0.875rem;
+    background: #0c1218;
+    border: none;
+    box-shadow:
+      0 10px 28px rgba(8, 14, 22, 0.16),
+      0 0 0 1px rgba(255, 255, 255, 0.1);
+
+    .lol-hero-profile__art {
+      flex: 1;
+      height: 100%;
+      min-height: 0;
+
+      &::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        border-radius: inherit;
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+      }
+    }
+
+    .lol-hero-profile__splash {
+      display: block;
+    }
+  }
+
+  &--compact.lol-hero-profile--art-only {
+    .lol-hero-profile__art {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+      background: #0a1018;
+    }
+
+    .lol-hero-profile__splash {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-position: top center;
+    }
+  }
+
+  &--bar-text {
+    width: 100%;
+    min-width: 0;
+    border: none;
+    background: transparent;
+    box-shadow: none;
+    overflow: visible;
+
+    .lol-hero-profile__bar-summary {
+      padding: 0.4rem 0.75rem;
+      background: rgba(255, 255, 255, 0.48);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.38);
+      border-radius: 0.875rem;
+      color: #111827;
+    }
+
+    :deep(.lol-hero-summary__name) {
+      font-size: 1rem;
+      line-height: 1.25;
+    }
+
+    :deep(.lol-hero-summary__meta) {
+      margin-top: 0.4rem;
+    }
+
+    @media (min-width: 640px) {
+      .lol-hero-profile__bar-summary {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.55rem 1rem;
+      }
+
+      :deep(.lol-hero-summary__name) {
+        font-size: 1.05rem;
+      }
+
+      :deep(.lol-hero-summary__meta) {
+        flex-shrink: 0;
+        display: flex;
+        gap: 0.75rem;
+        margin-top: 0;
+      }
+
+      :deep(.lol-hero-summary__meta-item) {
+        flex-direction: row;
+        align-items: center;
+        gap: 0.35rem;
+      }
+    }
+  }
+}
+</style>

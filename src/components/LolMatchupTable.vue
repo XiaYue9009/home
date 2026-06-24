@@ -48,6 +48,7 @@ import {
 } from '../lib/lol-game-data.js';
 import {
   buildHeroLookup,
+  compactRowsForStorage,
   createEmptyMatchupRow,
   fetchLolHeroList,
   fetchMidHeroIds,
@@ -105,6 +106,37 @@ const syncStatusTone = computed(() => {
   if (syncStatus.value === 'error') return 'error';
   return 'cloud';
 });
+
+const syncElTagType = computed(() => {
+  const tone = syncStatusTone.value;
+  if (tone === 'error') return 'danger';
+  if (tone === 'syncing') return 'warning';
+  if (tone === 'cloud') return 'success';
+  return 'info';
+});
+
+const tableWrapRef = ref(null);
+const tableHeight = ref(480);
+let tableResizeObserver;
+
+function updateTableHeight() {
+  if (!props.compact || !tableWrapRef.value) return;
+  const height = tableWrapRef.value.clientHeight;
+  if (height > 0) tableHeight.value = height;
+}
+
+function bindTableResize() {
+  tableResizeObserver?.disconnect();
+  if (!tableWrapRef.value || typeof ResizeObserver === 'undefined') return;
+  tableResizeObserver = new ResizeObserver(() => updateTableHeight());
+  tableResizeObserver.observe(tableWrapRef.value);
+  updateTableHeight();
+}
+
+watch(
+  () => [props.compact, loading.value],
+  () => nextTick(bindTableResize),
+);
 
 const lookup = computed(() => {
   const heroLookup = buildHeroLookup(heroes.value);
@@ -223,7 +255,16 @@ function filterCatalog(list) {
 
 function rowSearchText(row) {
   const hero = lookup.value.byId.get(row.enemyId);
-  return [hero?.name, hero?.fullName, row.enemyName].filter(Boolean).join(' ').toLowerCase();
+  return [
+    hero?.fullName,
+    hero?.name,
+    hero?.alias,
+    hero?.keywords,
+    row.enemyName,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
 }
 
 function heroForRow(row) {
@@ -580,15 +621,34 @@ function executeRemoveRow() {
 }
 
 let saveTimer;
+let rowsSnapshot = '';
+
+function buildRowsSnapshot(value) {
+  return JSON.stringify(compactRowsForStorage(value));
+}
+
+function withTimeout(promise, ms = 8000) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('timeout')), ms);
+    }),
+  ]);
+}
+
 watch(
   rows,
   (value) => {
     if (!props.heroId || loading.value || hydrating.value || !canEdit.value) return;
+    if (buildRowsSnapshot(value) === rowsSnapshot) return;
     clearTimeout(saveTimer);
     saveTimer = setTimeout(async () => {
       if (isCloudSyncEnabled()) syncStatus.value = 'syncing';
       const result = await persistMatchups(props.heroId, value);
       if (!isCloudSyncEnabled()) return;
+      if (result.ok) {
+        rowsSnapshot = buildRowsSnapshot(value);
+      }
       syncStatus.value = result.ok ? 'synced' : 'error';
     }, 250);
   },
@@ -612,25 +672,41 @@ onMounted(async () => {
     items.value = [];
   }
 
-  const heroLookup = buildHeroLookup(heroes.value);
-  const catalogs = { runes: runes.value, items: items.value };
-  const source = await resolveMatchupSource(props.heroId, props.matchups);
-  let normalized = normalizeMatchups(source, heroLookup, catalogs);
+  try {
+    const heroLookup = buildHeroLookup(heroes.value);
+    const catalogs = { runes: runes.value, items: items.value };
+    const source = await withTimeout(
+      resolveMatchupSource(props.heroId, props.matchups),
+    );
+    let normalized = normalizeMatchups(source, heroLookup, catalogs);
 
-  const midHeroIds = await fetchMidHeroIds();
-  normalized = mergeMidMatchupRows(normalized, {
-    pageHeroId: props.heroId,
-    midHeroIds,
-    heroLookup,
-  });
+    const midHeroIds = await fetchMidHeroIds();
+    normalized = mergeMidMatchupRows(normalized, {
+      pageHeroId: props.heroId,
+      midHeroIds,
+      heroLookup,
+    });
 
-  rows.value = normalized;
-  loading.value = false;
-  hydrating.value = false;
-
-  if (isCloudSyncEnabled()) {
-    syncStatus.value = 'synced';
+    rows.value = normalized;
+    rowsSnapshot = buildRowsSnapshot(rows.value);
+  } catch {
+    rows.value = normalizeMatchups(props.matchups, buildHeroLookup(heroes.value), {
+      runes: runes.value,
+      items: items.value,
+    });
+    rowsSnapshot = buildRowsSnapshot(rows.value);
+  } finally {
+    loading.value = false;
+    hydrating.value = false;
+    if (isCloudSyncEnabled() && syncStatus.value === 'syncing') {
+      syncStatus.value = 'synced';
+    }
+    nextTick(bindTableResize);
   }
+});
+
+onUnmounted(() => {
+  tableResizeObserver?.disconnect();
 });
 </script>
 
@@ -640,39 +716,27 @@ onMounted(async () => {
       <div class="lol-matchup-panel__title-wrap">
         <div class="lol-matchup-panel__title-row">
           <h2 class="font-display font-semibold text-heading">对线笔记</h2>
-          <span
-            class="lol-matchup-panel__sync-badge"
-            :class="`lol-matchup-panel__sync-badge--${syncStatusTone}`"
-            :title="isCloudSyncEnabled() ? '已连接 Supabase 云端' : '未配置 Supabase，数据仅保存在本浏览器'"
-          >
+          <el-tag :type="syncElTagType" size="small" effect="plain">
             {{ syncStatusLabel }}
-          </span>
+          </el-tag>
         </div>
         <p v-if="!compact" class="mt-1 text-sm text-muted">
           {{ heroName ? `${heroName} · ` : '' }}符文、召唤师技能与出装思路
         </p>
       </div>
       <div class="lol-matchup-panel__tools">
-        <div class="lol-matchup-panel__search-group">
-          <label class="lol-matchup-panel__search">
-            <span class="sr-only">搜索对线英雄</span>
-            <input
-              v-model="searchInput"
-              type="search"
-              placeholder="输入英雄名称"
-              class="lol-matchup-panel__input"
-              @keydown.enter.prevent="applySearch"
-            />
-          </label>
-          <button
-            type="button"
-            class="lol-matchup-panel__action lol-matchup-panel__action--search"
-            :disabled="loading"
-            @click="applySearch"
-          >
-            搜索
-          </button>
-        </div>
+        <el-input
+          v-model="searchInput"
+          class="lol-matchup-panel__search-input"
+          placeholder="搜索称呼或名字"
+          clearable
+          :disabled="loading"
+          @keyup.enter="applySearch"
+        >
+          <template #append>
+            <el-button :disabled="loading" @click="applySearch">搜索</el-button>
+          </template>
+        </el-input>
         <MatchupDifficultySelect
           v-model="difficultyFilter"
           size="md"
@@ -681,49 +745,41 @@ onMounted(async () => {
           :disabled="loading"
         />
         <div v-if="canEdit" class="lol-matchup-panel__auth lol-matchup-panel__auth--unlocked">
-          <span class="lol-matchup-panel__auth-badge">已解锁编辑</span>
-          <button
-            type="button"
-            class="lol-matchup-panel__action lol-matchup-panel__action--lock"
-            @click="lockEdit"
-          >
-            锁定
-          </button>
+          <el-tag type="success" size="small" effect="plain">已解锁编辑</el-tag>
+          <el-button size="small" @click="lockEdit">锁定</el-button>
         </div>
-        <form
-          v-else
-          class="lol-matchup-panel__auth"
-          @submit.prevent="unlockEdit"
-        >
-          <input
+        <div v-else class="lol-matchup-panel__auth">
+          <el-input
             v-model="editPasswordInput"
             type="password"
             inputmode="numeric"
             autocomplete="off"
-            class="lol-matchup-panel__auth-input"
+            size="small"
             placeholder="编辑密码"
             aria-label="编辑密码"
+            @keyup.enter="unlockEdit"
           />
-          <button
-            type="submit"
-            class="lol-matchup-panel__action lol-matchup-panel__action--unlock"
+          <el-button
+            type="primary"
+            size="small"
             :disabled="loading || !editPasswordInput"
+            @click="unlockEdit"
           >
             解锁
-          </button>
+          </el-button>
           <span v-if="editAuthError" class="lol-matchup-panel__auth-error" role="alert">
             {{ editAuthError }}
           </span>
-        </form>
-        <button
-          type="button"
-          class="lol-matchup-panel__action lol-matchup-panel__action--primary"
+        </div>
+        <el-button
+          type="primary"
+          size="small"
           :disabled="loading || !canEdit"
           :title="canEdit ? '新增对线笔记' : '请先输入密码解锁编辑'"
           @click="addRow"
         >
           新增
-        </button>
+        </el-button>
       </div>
     </div>
 
@@ -733,69 +789,33 @@ onMounted(async () => {
 
     <div v-else-if="rows.length === 0" class="lol-matchup-panel__empty">
       <p class="text-muted">还没有对线数据。</p>
-      <button
-        type="button"
-        class="lol-matchup-panel__action lol-matchup-panel__action--primary mt-4"
+      <el-button
+        type="primary"
+        class="mt-4"
         :disabled="!canEdit"
         :title="canEdit ? '新增对线笔记' : '请先输入密码解锁编辑'"
         @click="addRow"
       >
         新增
-      </button>
+      </el-button>
     </div>
 
     <div v-else class="lol-matchup-panel__body">
-      <div class="lol-matchup-panel__table-wrap">
-        <table class="lol-matchup-panel__table">
-        <thead>
-          <tr>
-            <th>英雄</th>
-            <th class="lol-matchup-panel__difficulty-head">
-              <div class="lol-matchup-panel__sort-head">
-                <span>对线难度</span>
-                <span class="lol-matchup-panel__sort-carets" aria-label="按对线难度排序">
-                  <button
-                    type="button"
-                    class="lol-matchup-panel__sort-caret"
-                    :class="{ 'is-active': difficultySort === 'desc' }"
-                    title="易 → 难"
-                    aria-label="按难度从易到难排序"
-                    @click="setDifficultySort('desc')"
-                  >
-                    <svg viewBox="0 0 10 10" width="8" height="8" aria-hidden="true">
-                      <path d="M5 2 L8.5 7 H1.5 Z" fill="currentColor" />
-                    </svg>
-                  </button>
-                  <button
-                    type="button"
-                    class="lol-matchup-panel__sort-caret"
-                    :class="{ 'is-active': difficultySort === 'asc' }"
-                    title="难 → 易"
-                    aria-label="按难度从难到易排序"
-                    @click="setDifficultySort('asc')"
-                  >
-                    <svg viewBox="0 0 10 10" width="8" height="8" aria-hidden="true">
-                      <path d="M5 8 L1.5 3 H8.5 Z" fill="currentColor" />
-                    </svg>
-                  </button>
-                </span>
-              </div>
-            </th>
-            <th class="lol-matchup-panel__skills-flash-cell">闪现</th>
-            <th class="lol-matchup-panel__skills-candidates-cell">候选技能</th>
-            <th>天赋</th>
-            <th>装备</th>
-            <th class="lol-matchup-panel__ops-head">操作</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-if="filteredRows.length === 0">
-            <td colspan="7" class="lol-matchup-panel__no-result">
-              没有匹配{{ filterSummary }}的结果
-            </td>
-          </tr>
-          <tr v-for="row in filteredRows" :key="row.id">
-            <td class="lol-matchup-panel__hero-cell">
+      <div ref="tableWrapRef" class="lol-matchup-panel__table-wrap">
+        <el-table
+          :data="filteredRows"
+          row-key="id"
+          class="lol-matchup-el-table"
+          :height="compact ? tableHeight : undefined"
+          :size="compact ? 'small' : 'default'"
+          border
+        >
+          <template #empty>
+            <span class="lol-matchup-panel__no-result">没有匹配{{ filterSummary }}的结果</span>
+          </template>
+
+          <el-table-column label="英雄" min-width="168" class-name="lol-matchup-panel__hero-cell">
+            <template #default="{ row }">
               <button
                 v-if="canEdit"
                 type="button"
@@ -838,9 +858,38 @@ onMounted(async () => {
                   <template v-else>{{ row.enemyName || '—' }}</template>
                 </span>
               </div>
-            </td>
+            </template>
+          </el-table-column>
 
-            <td class="lol-matchup-panel__difficulty-cell">
+          <el-table-column min-width="90" class-name="lol-matchup-panel__difficulty-cell">
+            <template #header>
+              <div class="lol-matchup-panel__sort-head">
+                <span>对线难度</span>
+                <span class="lol-matchup-panel__sort-carets" aria-label="按对线难度排序">
+                  <el-button
+                    link
+                    size="small"
+                    :class="{ 'is-active': difficultySort === 'desc' }"
+                    title="易 → 难"
+                    aria-label="按难度从易到难排序"
+                    @click="setDifficultySort('desc')"
+                  >
+                    ▲
+                  </el-button>
+                  <el-button
+                    link
+                    size="small"
+                    :class="{ 'is-active': difficultySort === 'asc' }"
+                    title="难 → 易"
+                    aria-label="按难度从难到易排序"
+                    @click="setDifficultySort('asc')"
+                  >
+                    ▼
+                  </el-button>
+                </span>
+              </div>
+            </template>
+            <template #default="{ row }">
               <MatchupDifficultySelect
                 v-model="row.difficulty"
                 size="sm"
@@ -848,18 +897,19 @@ onMounted(async () => {
                 :allow-empty="false"
                 :disabled="!canEdit"
               />
-            </td>
+            </template>
+          </el-table-column>
 
-            <td class="lol-matchup-panel__skills-flash-cell">
-              <span
-                class="lol-matchup-panel__icon-btn lol-matchup-panel__icon-btn--locked"
-                title="闪现（必带）"
-              >
+          <el-table-column label="闪现" width="72" class-name="lol-matchup-panel__skills-flash-cell">
+            <template #default>
+              <span class="lol-matchup-panel__icon-btn lol-matchup-panel__icon-btn--locked" title="闪现（必带）">
                 <img :src="summonerSpellIcon(FLASH_SPELL_ID)" alt="闪现" />
               </span>
-            </td>
+            </template>
+          </el-table-column>
 
-            <td class="lol-matchup-panel__skills-candidates-cell">
+          <el-table-column label="候选技能" min-width="150" class-name="lol-matchup-panel__skills-candidates-cell">
+            <template #default="{ row }">
               <div class="lol-matchup-panel__candidates-wrap">
                 <div class="lol-matchup-panel__icons lol-matchup-panel__icons--candidates">
                   <span
@@ -871,19 +921,22 @@ onMounted(async () => {
                     <img :src="summonerSpellIcon(spell.id)" :alt="spell.name" />
                   </span>
                 </div>
-                <button
+                <el-button
                   v-if="canEdit"
-                  type="button"
-                  class="lol-matchup-panel__candidates-edit"
+                  link
+                  size="small"
+                  type="primary"
                   title="调整候选技能（最多4个）"
                   @click="openCandidatePicker(row.id)"
                 >
                   调整
-                </button>
+                </el-button>
               </div>
-            </td>
+            </template>
+          </el-table-column>
 
-            <td class="lol-matchup-panel__runes-cell">
+          <el-table-column label="天赋" width="190" class-name="lol-matchup-panel__runes-cell">
+            <template #default="{ row }">
               <button
                 v-if="canEdit"
                 type="button"
@@ -954,9 +1007,11 @@ onMounted(async () => {
                   </div>
                 </div>
               </div>
-            </td>
+            </template>
+          </el-table-column>
 
-            <td class="lol-matchup-panel__items-cell">
+          <el-table-column label="装备" min-width="230" class-name="lol-matchup-panel__items-cell">
+            <template #default="{ row }">
               <button
                 v-if="canEdit"
                 type="button"
@@ -989,58 +1044,49 @@ onMounted(async () => {
                   <span v-if="!row.itemIds.length" class="lol-matchup-panel__loadout-empty">—</span>
                 </div>
               </div>
-            </td>
+            </template>
+          </el-table-column>
 
-            <td class="lol-matchup-panel__ops-cell">
+          <el-table-column label="操作" width="190" fixed="right" class-name="lol-matchup-panel__ops-cell">
+            <template #default="{ row }">
               <div v-if="canEdit" class="lol-matchup-panel__ops">
                 <div class="lol-matchup-panel__ops-row">
-                  <button
-                    type="button"
-                    class="lol-matchup-panel__op-btn lol-matchup-panel__op-btn--accent"
-                    title="复制天赋与装备"
-                    @click="copyLoadout(row)"
-                  >
+                  <el-button size="small" type="primary" plain title="复制天赋与装备" @click="copyLoadout(row)">
                     一键复制
-                  </button>
-                  <button
-                    type="button"
-                    class="lol-matchup-panel__op-btn lol-matchup-panel__op-btn--paste lol-matchup-panel__op-btn--accent"
+                  </el-button>
+                  <el-button
+                    size="small"
+                    type="success"
+                    plain
                     title="粘贴天赋与装备"
                     :disabled="!canPasteLoadout"
                     @click="pasteLoadout(row)"
                   >
                     一键粘贴
-                  </button>
+                  </el-button>
                 </div>
                 <div class="lol-matchup-panel__ops-row">
-                  <button
-                    type="button"
-                    class="lol-matchup-panel__op-btn lol-matchup-panel__op-btn--danger"
-                    title="删除此行"
-                    @click="confirmRemoveRow(row)"
-                  >
+                  <el-button size="small" type="danger" plain title="删除此行" @click="confirmRemoveRow(row)">
                     删除此行
-                  </button>
+                  </el-button>
                 </div>
               </div>
-              <span v-else class="lol-matchup-panel__ops-locked">只读</span>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+              <el-tag v-else size="small" type="info" effect="plain">只读</el-tag>
+            </template>
+          </el-table-column>
+        </el-table>
       </div>
     </div>
 
     <div v-if="!compact && !loading && rows.length" class="lol-matchup-panel__foot">
-      <button
-        type="button"
-        class="lol-matchup-panel__action lol-matchup-panel__action--primary"
+      <el-button
+        type="primary"
         :disabled="!canEdit"
         :title="canEdit ? '新增对线笔记' : '请先输入密码解锁编辑'"
         @click="addRow"
       >
         新增
-      </button>
+      </el-button>
     </div>
 
     <Teleport v-if="isMounted" to="body">
@@ -1404,12 +1450,20 @@ onMounted(async () => {
     flex: 1;
     height: 100%;
     min-height: 0;
-    padding: 0.55rem 0.65rem 0.5rem;
+    padding: 0.45rem 0.6rem 0.4rem;
 
     .lol-matchup-panel__head {
       flex-shrink: 0;
-      gap: 0.45rem;
-      margin-bottom: 0.4rem;
+      flex-direction: column;
+      gap: 0.3rem;
+      margin-bottom: 0.25rem;
+
+      @media (min-width: 640px) {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.35rem;
+      }
     }
 
     .lol-matchup-panel__title-wrap h2 {
@@ -1482,37 +1536,39 @@ onMounted(async () => {
     .lol-matchup-panel__table-wrap {
       flex: 1;
       min-height: 0;
-      overflow: auto;
+      overflow: hidden;
     }
 
-    .lol-matchup-panel__table {
+    :deep(.lol-matchup-el-table) {
       min-width: 50rem;
       font-size: 0.8125rem;
 
-      th {
-        position: sticky;
-        top: 0;
-        z-index: 1;
+      .el-table__header-wrapper th.el-table__cell {
         padding: 0.55rem 0.5rem;
         font-size: 0.875rem;
-        font-weight: 600;
-        color: var(--color-heading);
-        background: color-mix(in srgb, var(--color-accent) 9%, var(--color-glass-bg));
       }
 
-      td {
+      .el-table__body-wrapper .el-table__cell {
         padding: 0.35rem 0.45rem;
       }
     }
 
     .lol-matchup-panel__hero-name {
+      gap: 0.08rem;
+    }
+
+    .lol-matchup-panel__hero-epithet {
       font-size: 0.8125rem;
+    }
+
+    .lol-matchup-panel__hero-title {
+      font-size: 0.75rem;
     }
 
     .lol-matchup-panel__hero-icon,
     .lol-matchup-panel__hero-placeholder {
-      width: 2.5rem;
-      height: 2.5rem;
+      width: 3.25rem;
+      height: 3.25rem;
     }
 
     .lol-matchup-panel__icon-btn {
@@ -1789,41 +1845,39 @@ onMounted(async () => {
     min-height: 0;
   }
 
+  &__search-input {
+    width: 100%;
+
+    @media (min-width: 640px) {
+      width: 11.5rem;
+    }
+  }
+
   &__table-wrap {
-    overflow-x: auto;
+    overflow: hidden;
     border-radius: 0.75rem;
     border: 1px solid var(--color-border);
   }
 
-  &__table {
+  :deep(.lol-matchup-el-table) {
+    --el-table-border-color: var(--color-border);
+    --el-table-header-bg-color: color-mix(in srgb, var(--color-accent) 10%, var(--color-glass-bg));
+    --el-table-tr-bg-color: transparent;
+    --el-table-row-hover-bg-color: color-mix(in srgb, var(--color-accent) 6%, transparent);
+    --el-table-text-color: var(--color-text);
+    --el-table-header-text-color: var(--color-heading);
     width: 100%;
     min-width: 64rem;
-    border-collapse: collapse;
-    font-size: 0.875rem;
+    background: transparent;
 
-    th,
-    td {
-      padding: 0.65rem 0.75rem;
-      text-align: left;
-      vertical-align: middle;
-      border-bottom: 1px solid var(--color-border);
-    }
-
-    th {
-      background: color-mix(in srgb, var(--color-accent) 10%, var(--color-glass-bg));
-      font-size: 0.875rem;
+    .el-table__header-wrapper th.el-table__cell {
       font-weight: 600;
-      color: var(--color-heading);
       white-space: nowrap;
       padding-block: 0.8rem;
     }
 
-    tbody tr:last-child td {
-      border-bottom: none;
-    }
-
-    tbody tr:hover td {
-      background: color-mix(in srgb, var(--color-accent) 6%, transparent);
+    .el-table__body-wrapper .el-table__cell {
+      vertical-align: middle;
     }
   }
 
@@ -1843,7 +1897,9 @@ onMounted(async () => {
     min-width: 9rem;
     text-align: center;
 
-    :deep(.difficulty-select) {
+    :deep(.difficulty-select-plain),
+    :deep(.difficulty-select-filter) {
+      width: 100%;
       justify-content: center;
     }
   }
@@ -1866,6 +1922,25 @@ onMounted(async () => {
     gap: 0.07rem;
     line-height: 0;
     margin-inline-start: 0.1rem;
+
+    :deep(.el-button) {
+      height: auto;
+      min-height: 0;
+      padding: 0;
+      margin: 0;
+      font-size: 0.625rem;
+      line-height: 1;
+      color: var(--color-text-subtle);
+
+      &:hover {
+        color: var(--color-text-muted);
+      }
+
+      &.is-active,
+      &.is-active:hover {
+        color: var(--color-accent);
+      }
+    }
   }
 
   &__sort-caret {
@@ -1919,8 +1994,8 @@ onMounted(async () => {
 
   &__hero-icon,
   &__hero-placeholder {
-    width: 3rem;
-    height: 3rem;
+    width: 3.75rem;
+    height: 3.75rem;
     border-radius: 9999px;
     flex-shrink: 0;
   }
@@ -1940,23 +2015,26 @@ onMounted(async () => {
   }
 
   &__hero-name {
-    display: inline-flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 0.15rem 0.4rem;
-    font-size: 1rem;
-    line-height: 1.25;
-    white-space: nowrap;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.12rem;
+    min-width: 0;
+    line-height: 1.2;
   }
 
   &__hero-epithet {
+    font-size: 0.9375rem;
     font-weight: 700;
     color: var(--color-heading);
+    white-space: nowrap;
   }
 
   &__hero-title {
+    font-size: 0.8125rem;
     font-weight: 600;
     color: var(--color-text-muted);
+    white-space: nowrap;
   }
 
   &__icons {

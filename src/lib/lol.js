@@ -58,7 +58,22 @@ function skinDisplayImage(skin) {
   return skin?.loadingImg || skin?.mainImg || skin?.iconImg || '';
 }
 
+function skinDetailSplash(skin) {
+  return skin?.mainImg || skin?.loadingImg || skin?.iconImg || '';
+}
+
+/** 横屏壁纸/原画（官网 center → guidetop → big） */
+function skinWallpaperImage(skin) {
+  return skin?.centerImg || skin?.sourceImg || skin?.mainImg || '';
+}
+
+const heroDetailCache = new Map();
+
 export async function fetchLolHeroDetail(heroId) {
+  if (heroDetailCache.has(heroId)) {
+    return heroDetailCache.get(heroId);
+  }
+
   const res = await fetch(
     `https://game.gtimg.cn/images/lol/act/img/js/hero/${heroId}.js`,
     { headers: { Referer: LOL_REFERER } },
@@ -71,7 +86,7 @@ export async function fetchLolHeroDetail(heroId) {
   const { avatarSkin, displaySkin } = pickHeroSkins(skins, heroId);
   const difficulty = difficultyBars(hero.difficulty);
 
-  return {
+  const detail = {
     id: hero.heroId,
     name: hero.title,
     fullName: hero.name,
@@ -85,7 +100,9 @@ export async function fetchLolHeroDetail(heroId) {
     defense: hero.defense,
     magic: hero.magic,
     icon: avatarSkin?.iconImg || '',
-    splash: skinDisplayImage(displaySkin) || hero.palmHeroHeadImg || avatarSkin?.iconImg || '',
+    splash: skinDetailSplash(displaySkin) || hero.palmHeroHeadImg || avatarSkin?.iconImg || '',
+    portraitImg: skinDisplayImage(displaySkin),
+    wallpaperImg: skinWallpaperImage(displaySkin),
     mainImg: displaySkin?.mainImg || displaySkin?.loadingImg || '',
     palmImg: hero.palmHeroHeadImg || '',
     spells: sortSpells(data.spells || []).map((spell) => ({
@@ -97,6 +114,9 @@ export async function fetchLolHeroDetail(heroId) {
     officialUrl: lolHeroDetailUrl(heroId),
     pagePath: lolHeroPagePath(heroId),
   };
+
+  heroDetailCache.set(heroId, detail);
+  return detail;
 }
 
 export async function fetchLolHero(heroId) {

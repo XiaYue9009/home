@@ -17,16 +17,38 @@ function getClient() {
   return client;
 }
 
-function entryToRow(entry) {
+function parseRpcJson(value) {
+  if (value == null) return null;
+  if (typeof value === 'string') {
+    try {
+      return JSON.parse(value);
+    } catch {
+      return null;
+    }
+  }
+  return value;
+}
+
+function parseRowsPayload(rows) {
+  const parsed = parseRpcJson(rows);
+  if (Array.isArray(parsed)) return parsed;
+  if (parsed && typeof parsed === 'object') return Object.values(parsed);
+  return [];
+}
+
+/** 兼容 RPC/legacy 的 snake_case 与 camelCase */
+function normalizeCloudRow(entry) {
+  if (!entry || typeof entry !== 'object') return null;
+
   return {
     id: entry.id,
-    enemyId: entry.enemy_id || '',
-    enemyName: '',
-    candidateSpellIds: entry.candidate_spell_ids || [],
-    skillIds: entry.skill_ids || [],
-    primaryRuneIds: entry.primary_rune_ids || [],
-    secondaryRuneIds: entry.secondary_rune_ids || [],
-    itemIds: entry.item_ids || [],
+    enemyId: String(entry.enemy_id ?? entry.enemyId ?? ''),
+    enemyName: entry.enemyName || entry.enemy_name || '',
+    candidateSpellIds: [...(entry.candidate_spell_ids ?? entry.candidateSpellIds ?? [])],
+    skillIds: [...(entry.skill_ids ?? entry.skillIds ?? [])],
+    primaryRuneIds: [...(entry.primary_rune_ids ?? entry.primaryRuneIds ?? [])],
+    secondaryRuneIds: [...(entry.secondary_rune_ids ?? entry.secondaryRuneIds ?? [])],
+    itemIds: [...(entry.item_ids ?? entry.itemIds ?? [])],
     difficulty: entry.difficulty || 'unknown',
     tips: entry.tips || '',
   };
@@ -48,55 +70,32 @@ function rowToEntry(heroId, row, updatedAt) {
   };
 }
 
-function latestUpdatedAt(entries = [], fallback = '') {
-  if (!entries.length) return fallback;
-  return entries.reduce(
-    (max, entry) => (entry.updated_at > max ? entry.updated_at : max),
-    entries[0].updated_at,
-  );
-}
-
-async function fetchLegacyCloudMatchups(supabase, heroId) {
-  const { data, error } = await supabase
-    .from('lol_matchups')
-    .select('rows, updated_at')
-    .eq('hero_id', heroId)
-    .maybeSingle();
-
-  if (error) throw error;
-  if (!data) return null;
-
-  return {
-    rows: data.rows || [],
-    updatedAt: data.updated_at,
-    legacy: true,
-  };
-}
-
+/** POST /rpc/fetch_lol_matchup_entries，参数在 body 字段 */
 export async function fetchCloudMatchups(heroId) {
   const supabase = getClient();
   if (!supabase) return null;
 
-  const { data: entries, error } = await supabase
-    .from('lol_matchup_entries')
-    .select('*')
-    .eq('hero_id', heroId);
+  const { data, error } = await supabase.rpc('fetch_lol_matchup_entries', {
+    body: { hero_id: heroId },
+  });
 
-  if (error) {
-    if (error.code === '42P01') return fetchLegacyCloudMatchups(supabase, heroId);
-    throw error;
-  }
+  if (error) throw error;
 
-  if (entries?.length) {
-    return {
-      rows: entries.map(entryToRow),
-      updatedAt: latestUpdatedAt(entries),
-    };
-  }
+  const payload = parseRpcJson(data);
+  const rawRows = parseRowsPayload(payload?.rows);
+  if (!rawRows.length) return null;
 
-  return fetchLegacyCloudMatchups(supabase, heroId);
+  const rows = rawRows.map(normalizeCloudRow).filter(Boolean);
+  if (!rows.length) return null;
+
+  return {
+    rows,
+    updatedAt: payload?.updated_at || payload?.updatedAt || '',
+    legacy: Boolean(payload?.legacy),
+  };
 }
 
+/** POST /rpc/sync_lol_matchup_entries，参数在 body 字段（upsert + 清理多余行，单次请求） */
 export async function upsertCloudMatchups(heroId, rows) {
   const supabase = getClient();
   if (!supabase) return null;
@@ -104,40 +103,14 @@ export async function upsertCloudMatchups(heroId, rows) {
   const updatedAt = new Date().toISOString();
   const payload = rows.map((row) => rowToEntry(heroId, row, updatedAt));
 
-  const { error: deleteError } = await supabase
-    .from('lol_matchup_entries')
-    .delete()
-    .eq('hero_id', heroId);
-
-  if (deleteError) {
-    if (deleteError.code === '42P01') {
-      return upsertLegacyCloudMatchups(supabase, heroId, rows, updatedAt);
-    }
-    throw deleteError;
-  }
-
-  if (payload.length) {
-    const { error: insertError } = await supabase.from('lol_matchup_entries').insert(payload);
-    if (insertError) throw insertError;
-  }
-
-  return updatedAt;
-}
-
-async function upsertLegacyCloudMatchups(supabase, heroId, rows, updatedAt) {
-  const { data, error } = await supabase
-    .from('lol_matchups')
-    .upsert(
-      {
-        hero_id: heroId,
-        rows,
-        updated_at: updatedAt,
-      },
-      { onConflict: 'hero_id' },
-    )
-    .select('updated_at')
-    .single();
+  const { data, error } = await supabase.rpc('sync_lol_matchup_entries', {
+    body: {
+      hero_id: heroId,
+      rows: payload,
+    },
+  });
 
   if (error) throw error;
+
   return data?.updated_at || updatedAt;
 }

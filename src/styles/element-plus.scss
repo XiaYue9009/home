@@ -1,0 +1,50 @@
+/* Element Plus 与站点主题融合 */
+:root {
+  --el-color-primary: var(--color-accent);
+  --el-color-primary-light-3: color-mix(in srgb, var(--color-accent) 70%, white);
+  --el-color-primary-light-5: color-mix(in srgb, var(--color-accent) 50%, white);
+  --el-color-primary-light-7: color-mix(in srgb, var(--color-accent) 30%, white);
+  --el-color-primary-light-8: color-mix(in srgb, var(--color-accent) 20%, white);
+  --el-color-primary-light-9: color-mix(in srgb, var(--color-accent) 10%, white);
+  --el-color-primary-dark-2: color-mix(in srgb, var(--color-accent) 85%, black);
+  --el-bg-color: var(--color-glass-bg);
+  --el-bg-color-overlay: var(--color-glass-bg);
+  --el-text-color-primary: var(--color-heading);
+  --el-text-color-regular: var(--color-text-muted);
+  --el-text-color-secondary: var(--color-text-subtle);
+  --el-border-color: var(--color-border);
+  --el-border-color-light: var(--color-glass-border);
+  --el-fill-color-blank: color-mix(in srgb, var(--color-glass-bg) 94%, transparent);
+  --el-border-radius-base: 0.5rem;
+  --el-font-size-base: 0.8125rem;
+}
+
+.el-table {
+  --el-table-bg-color: transparent;
+  --el-table-tr-bg-color: transparent;
+  --el-table-header-bg-color: color-mix(in srgb, var(--color-accent) 9%, var(--color-glass-bg));
+  --el-table-row-hover-bg-color: color-mix(in srgb, var(--color-accent) 6%, transparent);
+  --el-table-border-color: var(--color-border);
+}
+
+.el-table .cell {
+  line-height: 1.35;
+}
+
+.lol-matchup-el-table {
+  width: 100%;
+}
+
+.difficulty-select-plain {
+  width: 100%;
+
+  .el-select__wrapper {
+    box-shadow: none !important;
+    background: transparent !important;
+    padding-inline: 0.15rem;
+  }
+}
+
+.difficulty-select-filter {
+  min-width: 7.5rem;
+}

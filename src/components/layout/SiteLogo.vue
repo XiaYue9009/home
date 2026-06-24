@@ -1,0 +1,63 @@
+<template>
+  <span class="site-logo shrink-0 transition-transform group-hover:scale-110" aria-hidden="true">
+    <svg class="logo-nature h-8 w-8" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M2 26h28v2H2z" fill="#4a7c59" opacity="0.35" />
+      <ellipse cx="16" cy="27" rx="13" ry="1.5" fill="#3d6b47" opacity="0.2" />
+      <path
+        d="M6 24.5c1.2-0.8 2.4-0.5 3.5 0.2 1.2 0.8 2.5 1 3.8 0.3 1.5-0.8 3-0.6 4.2 0.4 1.4 1.1 2.8 1.2 4.5 0.2"
+        stroke="#5a9a6a"
+        stroke-width="0.8"
+        stroke-linecap="round"
+        opacity="0.7"
+      />
+      <path d="M8 18.5 16 11l8 7.5" stroke="#6b4423" stroke-width="0.6" fill="none" opacity="0.5" />
+      <rect x="9" y="18" width="14" height="8" rx="0.5" fill="#f0e4cc" />
+      <rect x="9" y="18" width="14" height="8" rx="0.5" stroke="#c9b896" stroke-width="0.5" />
+      <path d="M7 18.5 16 9.5 25 18.5H7z" fill="#3d6b47" />
+      <path d="M7 18.5 16 9.5 25 18.5" stroke="#2f5233" stroke-width="0.6" stroke-linejoin="round" />
+      <rect x="20.5" y="12" width="2.2" height="4.5" rx="0.4" fill="#a08060" />
+      <path
+        d="M21.6 11.5c0.3-0.8 0.8-1.2 1.2-0.8 0.3 0.3 0.2 0.9-0.2 1.5"
+        stroke="#b0b0b0"
+        stroke-width="0.5"
+        stroke-linecap="round"
+        opacity="0.6"
+      />
+      <rect x="13.5" y="20" width="5" height="6" rx="0.3" fill="#6b4423" />
+      <circle cx="17.8" cy="23.5" r="0.45" fill="#d4a574" />
+      <rect x="10.5" y="20" width="2.5" height="2.5" rx="0.3" fill="#fff8e7" stroke="#c9b896" stroke-width="0.4" />
+      <rect x="19" y="20" width="2.5" height="2.5" rx="0.3" fill="#fff8e7" stroke="#c9b896" stroke-width="0.4" />
+      <path d="M11.75 21.25h0.01M20.25 21.25h0.01" stroke="#c9b896" stroke-width="0.5" stroke-linecap="round" />
+      <path d="M4 24v-5.5M4 21.5h3.5M4 23h2.5" stroke="#8b6914" stroke-width="0.7" stroke-linecap="round" opacity="0.55" />
+      <circle cx="26.5" cy="22" r="3.5" fill="#4a7c59" opacity="0.85" />
+      <circle cx="26.5" cy="22" r="2.2" fill="#3d6b47" opacity="0.5" />
+      <path d="M26.5 18.5v-2.5M24.5 20.5h4" stroke="#2f5233" stroke-width="0.6" stroke-linecap="round" opacity="0.6" />
+      <circle cx="5.5" cy="14.5" r="2.8" fill="#5a9a6a" opacity="0.75" />
+      <rect x="4.8" y="16.5" width="1.4" height="3" rx="0.3" fill="#6b4423" opacity="0.6" />
+    </svg>
+
+    <svg class="logo-minimal h-8 w-8" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="16" cy="16" r="10" stroke="#27272a" stroke-width="2" />
+      <circle cx="16" cy="16" r="4" fill="#27272a" />
+    </svg>
+
+    <svg class="logo-night h-8 w-8" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="16" cy="16" r="11" fill="#cdd6f4" />
+      <circle cx="20" cy="13" r="9" fill="#16161e" />
+    </svg>
+  </span>
+</template>
+
+<style scoped>
+.site-logo .logo-nature,
+.site-logo .logo-minimal,
+.site-logo .logo-night {
+  display: none;
+}
+
+:global([data-theme='nature']) .site-logo .logo-nature,
+:global([data-theme='minimal']) .site-logo .logo-minimal,
+:global([data-theme='night']) .site-logo .logo-night {
+  display: block;
+}
+</style>

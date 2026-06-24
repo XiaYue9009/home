@@ -1,13 +1,8 @@
----
-import BaseLayout from '../layouts/BaseLayout.astro';
-import { withBase } from '../lib/paths';
----
-
-<BaseLayout title="页面未找到" description="您访问的页面不存在">
+<template>
   <div class="mx-auto flex max-w-3xl flex-col items-center px-4 py-24 text-center sm:px-6">
     <p class="text-6xl font-bold text-accent sm:text-8xl">404</p>
     <h1 class="mt-4 font-display text-2xl font-bold text-heading sm:text-3xl">页面未找到</h1>
     <p class="mt-3 max-w-md text-muted">您访问的链接可能已失效，或页面已被移除。</p>
-    <a href={withBase('')} class="btn-primary mt-8">返回首页</a>
+    <RouterLink to="/" class="btn-primary mt-8">返回首页</RouterLink>
   </div>
-</BaseLayout>
+</template>

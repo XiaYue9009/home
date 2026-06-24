@@ -9,26 +9,29 @@
     "url": "https://github.com/XiaYue9009/home.git"
   },
   "scripts": {
-    "dev": "astro dev",
-    "build": "astro build",
-    "preview": "astro preview",
-    "astro": "astro",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
     "sync:lol-mid": "node scripts/sync-lol-mid-heroes.mjs",
-    "prebuild": "pnpm sync:lol-mid"
+    "prebuild": "pnpm sync:lol-mid",
+    "postbuild": "node scripts/spa-fallback.mjs"
   },
   "dependencies": {
-    "@astrojs/mdx": "^3.1.9",
-    "@astrojs/tailwind": "^5.1.4",
-    "@astrojs/vue": "^4.5.3",
     "@supabase/supabase-js": "^2.108.2",
     "@tailwindcss/typography": "^0.5.16",
-    "astro": "^4.16.18",
+    "element-plus": "^2.14.2",
+    "marked": "^18.0.5",
+    "pinia": "^3.0.4",
     "tailwindcss": "^3.4.17",
-    "vue": "^3.5.13"
+    "vue": "^3.5.13",
+    "vue-router": "^4.6.4"
   },
   "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.4",
+    "autoprefixer": "^10.4.21",
     "sass": "^1.101.0",
     "unplugin-auto-import": "^21.0.0",
-    "unplugin-vue-components": "^32.1.0"
+    "unplugin-vue-components": "^32.1.0",
+    "vite": "^6.3.5"
   }
 }
