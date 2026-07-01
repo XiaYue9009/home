@@ -1,5 +1,7 @@
 # MoonHome 🌙
 
+站点地址：[`https://XiaYue9009.github.io/home/`](https://XiaYue9009.github.io/home/)
+
 个人网站 —— 记录生活趣事、技术笔记与游戏杂谈。
 
 基于 **Vite + Vue + Vue Router + Pinia + Tailwind CSS** 构建的单页应用，支持 Markdown 文章、LOL 对线笔记（Supabase 云端）、Giscus 评论，并通过 GitHub Actions 部署到 GitHub Pages。
@@ -71,7 +73,7 @@ export default defineConfig({
 
 推送 `main` 后，`.github/workflows/deploy.yml` 自动构建并发布。构建产物含 `404.html`（SPA fallback）。
 
-站点地址：`https://XiaYue9009.github.io/home/`
+站点地址：[`https://XiaYue9009.github.io/home/`](https://XiaYue9009.github.io/home/)
 
 若使用自定义域名，将 `base` 改为 `'/'`。
 
