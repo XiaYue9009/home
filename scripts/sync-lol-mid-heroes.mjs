@@ -1,5 +1,5 @@
 /**
- * 构建时在 Node 拉取官方分路数据，写入 src/data/lol-mid-hero-ids.js。
+ * 构建时在 Node 拉取官方分路数据，写入 src/data/lol/mid-hero-ids.js。
  * 浏览器无法跨域 fetch lol.qq.com，因此不在客户端请求该接口。
  */
 import { writeFileSync } from 'node:fs';
@@ -7,7 +7,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const OUT_FILE = join(__dirname, '../src/data/lol-mid-hero-ids.js');
+const OUT_FILE = join(__dirname, '../src/data/lol/mid-hero-ids.js');
 
 const LOL_REFERER = 'https://101.qq.com/';
 const HERO_LIST_URL = 'https://game.gtimg.cn/images/lol/act/img/js/heroList/hero_list.js';

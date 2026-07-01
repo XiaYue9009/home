@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { parseFrontmatter } from '../lib/frontmatter.js';
+import { parseFrontmatter } from '../lib/content/frontmatter.js';
 
 const modules = import.meta.glob('../content/posts/*.md', {
   query: '?raw',

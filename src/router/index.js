@@ -1,12 +1,14 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { SITE, CATEGORIES } from '../config/consts';
 
-const HomePage = () => import('../views/HomePage.vue');
-const CategoryPage = () => import('../views/CategoryPage.vue');
-const PostPage = () => import('../views/PostPage.vue');
-const AboutPage = () => import('../views/AboutPage.vue');
-const LolHeroPage = () => import('../views/LolHeroPage.vue');
-const NotFoundPage = () => import('../views/NotFoundPage.vue');
+const HomePage = () => import('../views/HomePage/index.vue');
+const CategoryPage = () => import('../views/CategoryPage/index.vue');
+const PostPage = () => import('../views/PostPage/index.vue');
+const AboutPage = () => import('../views/AboutPage/index.vue');
+const NotFoundPage = () => import('../views/NotFoundPage/index.vue');
+
+/** LOL 英雄详情（一屏布局，fitViewport） */
+const LolHeroPage = () => import('../views/lol/LolHeroPage/index.vue');
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),

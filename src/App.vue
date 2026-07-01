@@ -1,7 +1,7 @@
 <script setup>
-import AppHeader from './components/layout/AppHeader.vue';
-import AppFooter from './components/layout/AppFooter.vue';
-import { initNatureFall } from './lib/nature-fall.js';
+import AppHeader from './components/layout/AppHeader/index.vue';
+import AppFooter from './components/layout/AppFooter/index.vue';
+import { initNatureFall } from './lib/site/nature-fall.js';
 
 const route = useRoute();
 const fitViewport = computed(() => route.meta?.fitViewport === true);
