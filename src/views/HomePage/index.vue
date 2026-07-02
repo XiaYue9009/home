@@ -28,7 +28,7 @@ const latestPosts = computed(() => postsStore.latest(6));
 
   <section class="mx-auto max-w-6xl px-4 py-12 sm:px-6">
     <h2 class="mb-6 font-display text-2xl font-bold text-heading">分类</h2>
-    <div class="grid gap-4 sm:grid-cols-3">
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <RouterLink
         v-for="[key, cat] in Object.entries(CATEGORIES)"
         :key="key"

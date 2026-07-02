@@ -39,7 +39,7 @@ const router = createRouter({
       meta: { fitViewport: true },
     },
     {
-      path: '/:category(life|tech|lol)',
+      path: '/:category(life|tech|travel|lol)',
       name: 'category',
       component: CategoryPage,
       props: true,
