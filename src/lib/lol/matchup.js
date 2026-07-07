@@ -20,6 +20,7 @@ import {
   isCloudSyncEnabled,
   upsertCloudMatchups,
 } from './matchup-cloud.js';
+import { parseUpdatedAt } from '@/lib/supabase/client.js';
 
 export { isCloudSyncEnabled };
 
@@ -57,9 +58,8 @@ export function saveMatchupMeta(heroId, meta) {
   localStorage.setItem(matchupMetaKey(heroId), JSON.stringify(meta));
 }
 
-function parseUpdatedAt(value = '') {
-  const time = Date.parse(value);
-  return Number.isFinite(time) ? time : 0;
+function parseUpdatedAtLocal(value = '') {
+  return parseUpdatedAt(value);
 }
 
 function sameIdList(a = [], b = []) {
@@ -99,10 +99,10 @@ export function compactRowsForStorage(rows = []) {
   }));
 }
 
-/** 从云端 / 本地缓存 / 静态默认数据中选择最新的一份（只读，不写入云端） */
+/** 从云端 / 本地缓存 / 静态默认数据中选择最新的一份 */
 export async function resolveMatchupSource(heroId, fallbackRows = []) {
   const localRows = loadStoredMatchups(heroId);
-  const localUpdated = parseUpdatedAt(loadMatchupMeta(heroId)?.updatedAt);
+  const localUpdated = parseUpdatedAtLocal(loadMatchupMeta(heroId)?.updatedAt);
 
   if (!isCloudSyncEnabled()) {
     return localRows?.length ? localRows : fallbackRows;
@@ -110,7 +110,7 @@ export async function resolveMatchupSource(heroId, fallbackRows = []) {
 
   try {
     const cloud = await fetchCloudMatchups(heroId);
-    const cloudUpdated = parseUpdatedAt(cloud?.updatedAt);
+    const cloudUpdated = parseUpdatedAtLocal(cloud?.updatedAt);
     const hasCloudRows = Array.isArray(cloud?.rows) && cloud.rows.length > 0;
     const hasLocalRows = Array.isArray(localRows) && localRows.length > 0;
 
@@ -124,6 +124,34 @@ export async function resolveMatchupSource(heroId, fallbackRows = []) {
     return fallbackRows;
   } catch {
     return localRows?.length ? localRows : fallbackRows;
+  }
+}
+
+/** 将当前对线笔记回填到云端（本地/静态较新或云端为空时） */
+export async function ensureMatchupsSyncedToCloud(heroId, rows) {
+  const stored = compactRowsForStorage(rows);
+  if (!stored.length) {
+    return { ok: true, cloud: false, skipped: true };
+  }
+
+  if (!isCloudSyncEnabled()) {
+    return { ok: true, cloud: false };
+  }
+
+  const localUpdated = parseUpdatedAtLocal(loadMatchupMeta(heroId)?.updatedAt);
+
+  try {
+    const cloud = await fetchCloudMatchups(heroId);
+    const cloudUpdated = parseUpdatedAtLocal(cloud?.updatedAt);
+    const hasCloudRows = Array.isArray(cloud?.rows) && cloud.rows.length > 0;
+
+    if (hasCloudRows && cloudUpdated >= localUpdated) {
+      return { ok: true, cloud: true, skipped: true };
+    }
+
+    return await persistMatchups(heroId, rows);
+  } catch (error) {
+    return { ok: false, cloud: true, error };
   }
 }
 

@@ -2,15 +2,13 @@
 import PostCard from '@/components/post/PostCard/index.vue';
 import CategoryIcon from '@/components/CategoryIcon/index.vue';
 import LolHeroCard from '@/components/lol/LolHeroCard/index.vue';
+import LolHeroPicker from '@/components/lol/LolHeroPicker/index.vue';
 import TravelVideoCard from '@/components/travel/TravelVideoCard/index.vue';
 import { CATEGORIES } from '@/config/consts';
 import { usePostsStore } from '@/stores/posts.js';
 import { useTravelStore } from '@/stores/travel.js';
-import {
-  FEATURED_LOL_HERO_IDS,
-  FALLBACK_LOL_HEROES,
-  fetchLolHero,
-} from '@/lib/lol/index.js';
+import { useEditStore } from '@/stores/edit.js';
+import { useLolStore } from '@/stores/lol.js';
 
 const props = defineProps({
   category: { type: String, required: true },
@@ -18,11 +16,12 @@ const props = defineProps({
 
 const postsStore = usePostsStore();
 const travelStore = useTravelStore();
+const editStore = useEditStore();
+const lolStore = useLolStore();
 const categoryPosts = computed(() => postsStore.byCategory(props.category));
 const cat = computed(() => CATEGORIES[props.category]);
 
-const lolHeroes = ref([]);
-const lolLoading = ref(props.category === 'lol');
+const heroPickerOpen = ref(false);
 
 onMounted(async () => {
   if (props.category === 'travel') {
@@ -31,15 +30,12 @@ onMounted(async () => {
   }
 
   if (props.category !== 'lol') return;
-
-  try {
-    lolHeroes.value = await Promise.all(FEATURED_LOL_HERO_IDS.map((id) => fetchLolHero(id)));
-  } catch {
-    lolHeroes.value = FALLBACK_LOL_HEROES;
-  } finally {
-    lolLoading.value = false;
-  }
+  await lolStore.loadHeroes();
 });
+
+async function handleAddHero(hero) {
+  await lolStore.addHero(hero.id);
+}
 </script>
 
 <template>
@@ -128,11 +124,28 @@ onMounted(async () => {
     </section>
 
     <section v-if="category === 'lol'" class="mb-14">
-      <h2 class="mb-6 font-display text-xl font-semibold text-heading">我的英雄</h2>
-      <p v-if="lolLoading" class="text-muted">加载英雄…</p>
-      <div v-else class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        <LolHeroCard v-for="hero in lolHeroes" :key="hero.id" :hero="hero" />
+      <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <h2 class="font-display text-xl font-semibold text-heading">我的英雄</h2>
+        <el-button
+          type="primary"
+          size="small"
+          :disabled="!editStore.canEdit"
+          :title="editStore.canEdit ? '新增英雄' : '请先在导航栏解锁编辑'"
+          @click="heroPickerOpen = true"
+        >
+          新增
+        </el-button>
       </div>
+      <p v-if="lolStore.loading" class="text-muted">加载英雄…</p>
+      <div v-else class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <LolHeroCard v-for="hero in lolStore.heroes" :key="hero.id" :hero="hero" />
+      </div>
+      <LolHeroPicker
+        v-model:open="heroPickerOpen"
+        title="新增英雄"
+        :exclude-ids="lolStore.heroIds"
+        @select="handleAddHero"
+      />
     </section>
 
     <section v-if="categoryPosts.length > 0">

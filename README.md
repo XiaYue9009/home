@@ -51,13 +51,35 @@ tags: [Vue, Vite]
 2. 打开 [giscus.app](https://giscus.app/zh-CN)，按向导生成配置
 3. 复制 `.env.example` 为 `.env`，填入 `PUBLIC_GISCUS_*` 变量
 
-## LOL 对线笔记云端同步（Supabase）
+## LOL 云端同步（Supabase）
 
-对线表格默认保存在浏览器 `localStorage`。配置 Supabase 后，数据会同步到云端。
+配置 Supabase 后，**我的英雄**与**对线笔记**会同步到云端（本地 `localStorage` 作为缓存）。
 
-1. 在 Supabase SQL Editor 执行 `supabase/lol_matchup_entries.sql`
-2. 复制 Project URL 与 anon key 到 `.env` 的 `PUBLIC_SUPABASE_*`
-3. GitHub Actions Secrets 中同样配置这两个变量
+### 首次 / 更新数据库结构
+
+1. 安装依赖并登录 CLI（一次性）：
+   ```bash
+   pnpm install
+   supabase login
+   ```
+2. 关联远程项目（需数据库密码，见 Dashboard → Project Settings → Database）：
+   ```bash
+   pnpm db:link
+   # 或：supabase link --project-ref caiwzskepfycnoyplftf -p <数据库密码>
+   ```
+3. 推送 migrations 到远程：
+   ```bash
+   pnpm db:push
+   ```
+
+SQL 迁移文件位于 `supabase/migrations/`。修改 schema 后新建 migration，再执行 `pnpm db:push`。
+
+### 前端环境变量
+
+1. 复制 Project URL 与 anon key 到 `.env` 的 `PUBLIC_SUPABASE_*`
+2. GitHub Actions Secrets 中同样配置这两个变量
+
+首次打开英雄详情页时，本地/静态对线数据会自动回填到云端。
 
 构建前会自动运行 `pnpm sync:lol-mid` 同步中单英雄列表。
 

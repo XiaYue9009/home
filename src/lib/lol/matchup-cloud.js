@@ -1,33 +1,12 @@
 /** Supabase 对线表云同步（需配置 PUBLIC_SUPABASE_* 环境变量）。 */
-import { createClient } from '@supabase/supabase-js';
-
-let client = null;
+import {
+  getSupabaseClient,
+  isSupabaseConfigured,
+  parseRpcJson,
+} from '@/lib/supabase/client.js';
 
 export function isCloudSyncEnabled() {
-  return !!(import.meta.env.PUBLIC_SUPABASE_URL && import.meta.env.PUBLIC_SUPABASE_ANON_KEY);
-}
-
-function getClient() {
-  if (!isCloudSyncEnabled()) return null;
-  if (!client) {
-    client = createClient(
-      import.meta.env.PUBLIC_SUPABASE_URL,
-      import.meta.env.PUBLIC_SUPABASE_ANON_KEY,
-    );
-  }
-  return client;
-}
-
-function parseRpcJson(value) {
-  if (value == null) return null;
-  if (typeof value === 'string') {
-    try {
-      return JSON.parse(value);
-    } catch {
-      return null;
-    }
-  }
-  return value;
+  return isSupabaseConfigured();
 }
 
 function parseRowsPayload(rows) {
@@ -73,7 +52,7 @@ function rowToEntry(heroId, row, updatedAt) {
 
 /** POST /rpc/fetch_lol_matchup_entries，参数在 body 字段 */
 export async function fetchCloudMatchups(heroId) {
-  const supabase = getClient();
+  const supabase = getSupabaseClient();
   if (!supabase) return null;
 
   const { data, error } = await supabase.rpc('fetch_lol_matchup_entries', {
@@ -98,7 +77,7 @@ export async function fetchCloudMatchups(heroId) {
 
 /** POST /rpc/sync_lol_matchup_entries，参数在 body 字段（upsert + 清理多余行，单次请求） */
 export async function upsertCloudMatchups(heroId, rows) {
-  const supabase = getClient();
+  const supabase = getSupabaseClient();
   if (!supabase) return null;
 
   const updatedAt = new Date().toISOString();

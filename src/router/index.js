@@ -4,7 +4,6 @@ import { SITE, CATEGORIES } from '../config/consts';
 const HomePage = () => import('../views/HomePage/index.vue');
 const CategoryPage = () => import('../views/CategoryPage/index.vue');
 const PostPage = () => import('../views/PostPage/index.vue');
-const AboutPage = () => import('../views/AboutPage/index.vue');
 const NotFoundPage = () => import('../views/NotFoundPage/index.vue');
 
 /** LOL 英雄详情（一屏布局，fitViewport） */
@@ -21,9 +20,7 @@ const router = createRouter({
     },
     {
       path: '/about',
-      name: 'about',
-      component: AboutPage,
-      meta: { title: '关于' },
+      redirect: { path: '/', hash: '#about' },
     },
     {
       path: '/posts/:slug',
@@ -53,6 +50,7 @@ const router = createRouter({
   ],
   scrollBehavior(to, from, saved) {
     if (saved) return saved;
+    if (to.hash) return { el: to.hash, behavior: 'smooth' };
     return { top: 0 };
   },
 });

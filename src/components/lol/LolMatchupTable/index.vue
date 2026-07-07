@@ -19,11 +19,7 @@ import {
   compareDifficulty,
   getDifficultyLabel,
 } from '../../../config/lol/matchup-difficulty.js';
-import {
-  LOL_MATCHUP_EDIT_PASSWORD,
-  isMatchupEditUnlocked,
-  setMatchupEditUnlocked,
-} from '../../../config/lol/matchup-edit.js';
+import { useEditStore } from '@/stores/edit.js';
 import {
   DEFAULT_ITEM_STAGE,
   ITEM_ATTRIBUTE_GROUPS,
@@ -58,6 +54,7 @@ import {
   normalizeMatchups,
   persistMatchups,
   resolveMatchupSource,
+  ensureMatchupsSyncedToCloud,
 } from '../../../lib/lol/matchup.js';
 
 const props = defineProps({
@@ -90,9 +87,8 @@ const pendingDeleteRow = ref(null);
 const syncStatus = ref('idle');
 const hydrating = ref(true);
 const isMounted = ref(false);
-const canEdit = ref(false);
-const editPasswordInput = ref('');
-const editAuthError = ref('');
+const editStore = useEditStore();
+const canEdit = computed(() => editStore.canEdit);
 
 const syncStatusLabel = computed(() => {
   if (!isCloudSyncEnabled()) return '仅本地';
@@ -316,26 +312,6 @@ function sanitizeRowSkills(row) {
 
 function ensureCanEdit() {
   return canEdit.value;
-}
-
-function unlockEdit() {
-  editAuthError.value = '';
-  if (editPasswordInput.value === LOL_MATCHUP_EDIT_PASSWORD) {
-    canEdit.value = true;
-    setMatchupEditUnlocked(true);
-    editPasswordInput.value = '';
-    return;
-  }
-  editAuthError.value = '密码错误';
-}
-
-function lockEdit() {
-  canEdit.value = false;
-  setMatchupEditUnlocked(false);
-  editPasswordInput.value = '';
-  editAuthError.value = '';
-  closePicker();
-  pendingDeleteRow.value = null;
 }
 
 function openCandidatePicker(rowId) {
@@ -711,9 +687,15 @@ watch(
   { deep: true },
 );
 
+watch(canEdit, (value) => {
+  if (!value) {
+    closePicker();
+    pendingDeleteRow.value = null;
+  }
+});
+
 onMounted(async () => {
   isMounted.value = true;
-  canEdit.value = isMatchupEditUnlocked();
   if (isCloudSyncEnabled()) syncStatus.value = 'syncing';
 
   try {
@@ -745,6 +727,11 @@ onMounted(async () => {
 
     rows.value = normalized;
     rowsSnapshot = buildRowsSnapshot(rows.value);
+
+    if (isCloudSyncEnabled()) {
+      const backfill = await ensureMatchupsSyncedToCloud(props.heroId, rows.value);
+      syncStatus.value = backfill.ok ? 'synced' : 'error';
+    }
   } catch {
     rows.value = normalizeMatchups(props.matchups, buildHeroLookup(heroes.value), {
       runes: runes.value,
@@ -815,40 +802,11 @@ onUnmounted(() => {
           placeholder="全部难度"
           :disabled="loading"
         />
-        <div v-if="canEdit" class="lol-matchup-panel__auth lol-matchup-panel__auth--unlocked">
-          <el-tag type="success" size="small" effect="plain">已解锁编辑</el-tag>
-        </div>
-        <div v-else class="lol-matchup-panel__auth lol-matchup-panel__auth--locked">
-          <el-input
-            v-model="editPasswordInput"
-            class="lol-matchup-panel__auth-input"
-            type="password"
-            inputmode="numeric"
-            autocomplete="off"
-            size="small"
-            placeholder="编辑密码"
-            aria-label="编辑密码"
-            :aria-invalid="Boolean(editAuthError)"
-            @keyup.enter="unlockEdit"
-          />
-          <el-button
-            type="primary"
-            size="small"
-            :disabled="loading || !editPasswordInput"
-            @click="unlockEdit"
-          >
-            解锁
-          </el-button>
-          <span v-if="editAuthError" class="lol-matchup-panel__auth-error" role="alert">
-            {{ editAuthError }}
-          </span>
-        </div>
-        <el-button v-if="canEdit" size="small" @click="lockEdit">锁定</el-button>
         <el-button
           type="primary"
           size="small"
           :disabled="loading || !canEdit"
-          :title="canEdit ? '新增对线笔记' : '请先输入密码解锁编辑'"
+          :title="canEdit ? '新增对线笔记' : '请先在导航栏解锁编辑'"
           @click="addRow"
         >
           新增
@@ -866,7 +824,7 @@ onUnmounted(() => {
         type="primary"
         class="mt-4"
         :disabled="!canEdit"
-        :title="canEdit ? '新增对线笔记' : '请先输入密码解锁编辑'"
+        :title="canEdit ? '新增对线笔记' : '请先在导航栏解锁编辑'"
         @click="addRow"
       >
         新增
@@ -1155,7 +1113,7 @@ onUnmounted(() => {
       <el-button
         type="primary"
         :disabled="!canEdit"
-        :title="canEdit ? '新增对线笔记' : '请先输入密码解锁编辑'"
+        :title="canEdit ? '新增对线笔记' : '请先在导航栏解锁编辑'"
         @click="addRow"
       >
         新增

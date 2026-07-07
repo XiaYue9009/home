@@ -2,7 +2,8 @@
 /** LOL 英雄详情页：左侧立绘与简介，右侧对线表（一屏布局）。 */
 import LolHeroProfile from '@/components/lol/LolHeroProfile/index.vue';
 import LolMatchupTable from '@/components/lol/LolMatchupTable/index.vue';
-import { FEATURED_LOL_HERO_IDS, fetchLolHeroDetail } from '@/lib/lol/index.js';
+import { fetchLolHeroDetail } from '@/lib/lol/index.js';
+import { resolveFeaturedHeroIds, isFeaturedHeroId } from '@/lib/lol/featured-heroes.js';
 import { getLolMatchups } from '@/data/lol/matchups/index.js';
 import { SITE } from '@/config/consts';
 
@@ -22,7 +23,9 @@ async function loadHero(id) {
   loading.value = true;
   error.value = false;
 
-  if (!FEATURED_LOL_HERO_IDS.includes(id)) {
+  await resolveFeaturedHeroIds();
+
+  if (!isFeaturedHeroId(id)) {
     error.value = true;
     loading.value = false;
     return;

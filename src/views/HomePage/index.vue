@@ -1,6 +1,8 @@
 <script setup>
 import HeroMoon from '@/components/home/HeroMoon/index.vue';
 import InteractiveDemo from '@/components/home/InteractiveDemo/index.vue';
+import SiteAbout from '@/components/home/SiteAbout/index.vue';
+import SiteGithub from '@/components/home/SiteGithub/index.vue';
 import PostCard from '@/components/post/PostCard/index.vue';
 import CategoryIcon from '@/components/CategoryIcon/index.vue';
 import { SITE, CATEGORIES } from '@/config/consts';
@@ -21,7 +23,6 @@ const latestPosts = computed(() => postsStore.latest(6));
       <p class="mt-6 max-w-2xl text-lg text-muted">{{ SITE.description }}</p>
       <div class="mt-8 flex flex-wrap gap-3">
         <RouterLink to="/tech" class="btn-primary">浏览技术贴</RouterLink>
-        <RouterLink to="/about" class="btn-ghost">关于本站</RouterLink>
       </div>
     </div>
   </section>
@@ -46,12 +47,15 @@ const latestPosts = computed(() => postsStore.latest(6));
     <InteractiveDemo />
   </section>
 
-  <section class="mx-auto max-w-6xl px-4 pb-20 sm:px-6">
+  <section class="mx-auto max-w-6xl px-4 pb-12 sm:px-6">
     <h2 class="mb-6 font-display text-2xl font-bold text-heading">最新文章</h2>
     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       <PostCard v-for="post in latestPosts" :key="post.slug" :post="post" />
     </div>
   </section>
+
+  <SiteAbout />
+  <SiteGithub />
 </template>
 
 <style scoped>
