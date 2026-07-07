@@ -3,7 +3,7 @@ import { SITE } from '@/config/consts';
 </script>
 
 <template>
-  <section id="about" class="mx-auto max-w-6xl px-4 py-12 sm:px-6">
+  <section id="about" class="page-shell page-shell--section">
     <h2 class="mb-6 font-display text-2xl font-bold text-heading">关于</h2>
     <div class="glass-card p-6 sm:p-8">
       <div class="prose-moon">

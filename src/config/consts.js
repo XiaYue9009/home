@@ -10,6 +10,7 @@ export const CATEGORIES = {
   tech: { label: '技术', emoji: '⚡', color: 'text-sky-400' },
   travel: { label: '旅行', emoji: '✈️', color: 'text-amber-400' },
   lol: { label: 'LOL', emoji: '⚔️', color: 'text-violet-400' },
+  upcoming: { label: '后续优化', emoji: '🛠️', color: 'text-rose-400' },
 };
 
 export function formatDate(date) {

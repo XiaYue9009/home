@@ -107,6 +107,25 @@
     }
   }
 
+  .page-shell {
+    width: 100%;
+    max-width: 72rem;
+    margin-inline: auto;
+    padding: 3rem 1rem 0;
+
+    @media (min-width: 640px) {
+      padding-inline: 1.5rem;
+    }
+  }
+
+  .page-shell--category {
+    padding-bottom: 3rem;
+  }
+
+  .page-shell--section {
+    padding-bottom: 3rem;
+  }
+
   .header-bar {
     @apply sticky top-0 z-50 shrink-0 border-b backdrop-blur-lg;
     background-color: var(--color-header-bg);
@@ -180,6 +199,11 @@
 
 html {
   scrollbar-gutter: stable;
+}
+
+/* Element Plus 弹窗锁滚动时会收窄 body，与 scrollbar-gutter 叠加导致页面抖动 */
+body.el-popup-parent--hidden {
+  width: 100% !important;
 }
 
 html:has(body.layout-fit-viewport) {

@@ -3,7 +3,7 @@ import { SITE } from '@/config/consts';
 </script>
 
 <template>
-  <section id="github" class="mx-auto max-w-6xl px-4 pb-20 sm:px-6">
+  <section id="github" class="page-shell page-shell--section">
     <h2 class="mb-6 font-display text-2xl font-bold text-heading">GitHub</h2>
     <a
       :href="SITE.github"

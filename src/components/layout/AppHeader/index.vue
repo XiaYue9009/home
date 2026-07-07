@@ -1,6 +1,7 @@
 <script setup>
 import { storeToRefs } from 'pinia';
-import { SITE, CATEGORIES } from '../../../config/consts';
+import { SITE } from '../../../config/consts';
+import { buildPrimaryNavLinks, isNavLinkActive } from '../../../config/nav.js';
 import ThemeSwitcher from '../../ThemeSwitcher/index.vue';
 import WeatherWidget from '../../WeatherWidget/index.vue';
 import SiteLogo from '../SiteLogo/index.vue';
@@ -10,16 +11,10 @@ const route = useRoute();
 const editStore = useEditStore();
 const { canEdit, passwordInput, authError } = storeToRefs(editStore);
 
-const navLinks = Object.entries(CATEGORIES).map(([key, val]) => ({
-  to: `/${key}`,
-  label: val.label,
-}));
+const primaryNavLinks = buildPrimaryNavLinks();
 
 function isActive(to) {
-  if (to === '/') {
-    return route.path === '/' || route.path === '';
-  }
-  return route.path === to || route.path.startsWith(`${to}/`);
+  return isNavLinkActive(route.path, to);
 }
 
 function unlockEdit() {
@@ -37,8 +32,8 @@ function unlockEdit() {
 
       <nav class="hidden items-center gap-1 md:flex">
         <RouterLink
-          v-for="link in navLinks"
-          :key="link.to"
+          v-for="link in primaryNavLinks"
+          :key="link.key"
           :to="link.to"
           class="flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition"
           :class="isActive(link.to) ? 'nav-link-active' : 'nav-link'"

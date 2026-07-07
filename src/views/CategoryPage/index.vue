@@ -9,6 +9,7 @@ import { usePostsStore } from '@/stores/posts.js';
 import { useTravelStore } from '@/stores/travel.js';
 import { useEditStore } from '@/stores/edit.js';
 import { useLolStore } from '@/stores/lol.js';
+import UpcomingCardGrid from '@/components/upcoming/UpcomingCardGrid/index.vue';
 
 const props = defineProps({
   category: { type: String, required: true },
@@ -39,8 +40,11 @@ async function handleAddHero(hero) {
 </script>
 
 <template>
-  <div class="mx-auto max-w-6xl px-4 py-12 sm:px-6">
-    <header class="mb-10" :class="{ 'category-page-header': category === 'lol' || category === 'travel' }">
+  <div class="page-shell page-shell--category">
+    <header
+      class="mb-10"
+      :class="{ 'category-page-header': category === 'lol' || category === 'travel' || category === 'upcoming' }"
+    >
       <div v-if="category === 'lol'" class="category-page-header__row">
         <CategoryIcon :category="category" size="lg" />
         <h1 class="font-display text-3xl font-bold" :class="cat.color">{{ cat.label }}</h1>
@@ -76,12 +80,23 @@ async function handleAddHero(hero) {
           </span>
         </p>
       </div>
+      <div v-else-if="category === 'upcoming'" class="category-page-header__row">
+        <CategoryIcon :category="category" size="lg" />
+        <h1 class="font-display text-3xl font-bold" :class="cat.color">{{ cat.label }}</h1>
+        <p class="category-page-header__desc text-muted">
+          富文本编辑 · Typora 风格快捷键 · Ctrl+/ 切换 Markdown
+        </p>
+      </div>
       <template v-else>
         <CategoryIcon :category="category" size="lg" />
         <h1 class="mt-3 font-display text-3xl font-bold" :class="cat.color">{{ cat.label }}</h1>
         <p class="mt-2 text-muted">共 {{ categoryPosts.length }} 篇文章</p>
       </template>
     </header>
+
+    <section v-if="category === 'upcoming'" class="mb-14">
+      <UpcomingCardGrid />
+    </section>
 
     <section v-if="category === 'travel'" class="mb-14">
       <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -155,7 +170,9 @@ async function handleAddHero(hero) {
       </div>
     </section>
 
-    <p v-else-if="category !== 'lol' && category !== 'travel'" class="text-subtle">暂无文章。</p>
+    <p v-else-if="category !== 'lol' && category !== 'travel' && category !== 'upcoming'" class="text-subtle">
+      暂无文章。
+    </p>
   </div>
 </template>
 
