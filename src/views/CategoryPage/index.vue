@@ -12,6 +12,7 @@ import { useTravelStore } from '@/stores/travel.js';
 import { useEditStore } from '@/stores/edit.js';
 import { useLolStore } from '@/stores/lol.js';
 import UpcomingCardGrid from '@/components/upcoming/UpcomingCardGrid/index.vue';
+import SystemToolGrid from '@/components/tools/SystemToolGrid/index.vue';
 import {
   MOTION_CATEGORY,
   MOTION_STAGGER,
@@ -58,7 +59,7 @@ function refreshPulse(event) {
   <div class="page-shell page-shell--category">
     <header
       class="mb-10"
-      :class="{ 'category-page-header': category === 'lol' || category === 'travel' || category === 'upcoming' }"
+      :class="{ 'category-page-header': category === 'lol' || category === 'travel' || category === 'upcoming' || category === 'tools' }"
     >
       <div v-if="category === 'lol'" class="category-page-header__row">
         <MotionEnter :animation="MOTION_CATEGORY.icon.animation">
@@ -150,6 +151,29 @@ function refreshPulse(event) {
           富文本编辑 · Typora 风格快捷键 · Ctrl+/ 切换 Markdown
         </MotionEnter>
       </div>
+      <div v-else-if="category === 'tools'" class="category-page-header__row">
+        <MotionEnter :animation="MOTION_CATEGORY.icon.animation">
+          <CategoryIcon :category="category" size="lg" />
+        </MotionEnter>
+        <MotionEnter
+          tag="h1"
+          class="font-display text-3xl font-bold"
+          :class="cat.color"
+          :animation="MOTION_CATEGORY.title.animation"
+          :delay="MOTION_CATEGORY.title.delay"
+        >
+          {{ cat.label }}
+        </MotionEnter>
+        <MotionEnter
+          tag="p"
+          class="category-page-header__desc text-muted"
+          :animation="MOTION_CATEGORY.desc.animation"
+          :delay="MOTION_CATEGORY.desc.delay"
+          :speed="MOTION_CATEGORY.desc.speed"
+        >
+          站内工具能力展示 · 点击卡片查看 Demo、功能点与实现思路
+        </MotionEnter>
+      </div>
       <template v-else>
         <MotionEnter :animation="MOTION_CATEGORY.icon.animation">
           <CategoryIcon :category="category" size="lg" />
@@ -177,6 +201,10 @@ function refreshPulse(event) {
 
     <section v-if="category === 'upcoming'" class="mb-14">
       <UpcomingCardGrid />
+    </section>
+
+    <section v-if="category === 'tools'" class="mb-14">
+      <SystemToolGrid />
     </section>
 
     <section v-if="category === 'travel'" class="mb-14">
@@ -304,7 +332,7 @@ function refreshPulse(event) {
     </section>
 
     <MotionEnter
-      v-else-if="category !== 'lol' && category !== 'travel' && category !== 'upcoming'"
+      v-else-if="category !== 'lol' && category !== 'travel' && category !== 'upcoming' && category !== 'tools'"
       tag="p"
       class="text-subtle"
       animation="fadeIn"

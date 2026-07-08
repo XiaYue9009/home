@@ -1,7 +1,12 @@
+import {
+  checkGitHubImageBedAvailable,
+  isGitHubImageBedConfigured,
+  uploadFileToGitHubRepo,
+} from '@/lib/github/image-bed.js';
 import { getSupabaseClient, isSupabaseConfigured } from '@/lib/supabase/client.js';
 
 export function isImageUploadEnabled() {
-  return isSupabaseConfigured();
+  return isGitHubImageBedConfigured() || isSupabaseConfigured();
 }
 
 function buildObjectPath(file) {
@@ -11,11 +16,9 @@ function buildObjectPath(file) {
   return `upcoming/${id}.${safeExt}`;
 }
 
-export async function uploadEditorImage(file) {
+async function uploadViaSupabase(file) {
   const supabase = getSupabaseClient();
-  if (!supabase || !file) {
-    throw new Error('图床未配置或文件无效');
-  }
+  if (!supabase) throw new Error('Supabase 图床未配置');
 
   const path = buildObjectPath(file);
   const { error } = await supabase.storage.from('upcoming-images').upload(path, file, {
@@ -28,6 +31,26 @@ export async function uploadEditorImage(file) {
 
   const { data } = supabase.storage.from('upcoming-images').getPublicUrl(path);
   return data.publicUrl;
+}
+
+export async function uploadEditorImage(file) {
+  if (!file) throw new Error('文件无效');
+
+  if (isGitHubImageBedConfigured()) {
+    try {
+      if (await checkGitHubImageBedAvailable()) {
+        return await uploadFileToGitHubRepo(file);
+      }
+    } catch (error) {
+      if (!isSupabaseConfigured()) throw error;
+    }
+  }
+
+  if (isSupabaseConfigured()) {
+    return uploadViaSupabase(file);
+  }
+
+  throw new Error('图床未配置：请在 .env 设置 GITHUB_TOKEN，或配置 Supabase');
 }
 
 export function insertImageHtml(url, alt = '图片') {

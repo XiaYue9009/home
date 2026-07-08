@@ -1,0 +1,22 @@
+{
+  "name": "picgo-plugin-moonhome",
+  "version": "1.0.0",
+  "description": "PicGo uploader for MoonHome static assets (GitHub: XiaYue9009/picgo_moonhome)",
+  "main": "index.js",
+  "keywords": [
+    "picgo",
+    "picgo-plugin",
+    "moonhome",
+    "github"
+  ],
+  "author": "Moon",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/XiaYue9009/picgo_moonhome.git"
+  },
+  "picgoPlugin": {
+    "title": "MoonHome 图床",
+    "description": "上传至 GitHub 仓库 XiaYue9009/picgo_moonhome，默认 jsDelivr CDN 外链"
+  }
+}

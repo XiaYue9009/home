@@ -93,16 +93,23 @@ function pulseCta(event) {
           class="home-category-card glass-card"
           :data-category="key"
         >
-          <span class="home-category-card__icon-wrap">
-            <CategoryIcon :category="key" size="md" />
-          </span>
-          <h3 class="home-category-card__title font-display text-xl font-semibold" :class="cat.color">
-            {{ cat.label }}
-          </h3>
-          <p class="home-category-card__action text-sm text-muted">
-            <span>查看全部</span>
-            <span class="home-category-card__arrow" aria-hidden="true">→</span>
-          </p>
+          <div class="home-category-card__main">
+            <span class="home-category-card__icon-wrap">
+              <CategoryIcon :category="key" size="md" />
+            </span>
+            <h3 class="home-category-card__title font-display text-xl font-semibold" :class="cat.color">
+              {{ cat.label }}
+            </h3>
+            <p class="home-category-card__action text-sm text-muted">
+              <span>查看全部</span>
+              <span class="home-category-card__arrow" aria-hidden="true">→</span>
+            </p>
+          </div>
+          <div class="home-category-card__aside">
+            <p class="home-category-card__desc">
+              {{ cat.description }}
+            </p>
+          </div>
         </RouterLink>
       </ScrollReveal>
     </div>
@@ -152,22 +159,21 @@ function pulseCta(event) {
 }
 
 .home-category-grid {
+  --home-card-desc-width: 8.75rem;
+
   display: grid;
   width: 100%;
   gap: 1.25rem;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 
   > :deep(.motion-animate) {
     display: flex;
     min-width: 0;
   }
 
-  @media (min-width: 640px) {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  @media (min-width: 1024px) {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+  > :deep(.motion-animate:not(.motion-await)) .home-category-card__desc {
+    animation: home-card-desc-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    animation-delay: 160ms;
   }
 }
 
@@ -177,12 +183,12 @@ function pulseCta(event) {
 
   position: relative;
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.65rem;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 1rem;
   width: 100%;
-  min-height: 9.5rem;
-  padding: 1.5rem;
+  min-height: 7.5rem;
+  padding: 1.15rem 1.25rem;
   overflow: hidden;
   text-decoration: none;
   border-radius: 1rem;
@@ -210,6 +216,61 @@ function pulseCta(event) {
 
   &[data-category='upcoming'] {
     --card-accent: #fb7185;
+  }
+
+  &[data-category='tools'] {
+    --card-accent: #6366f1;
+  }
+
+  &__main {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.45rem;
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__aside {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex: 0 0 var(--home-card-desc-width);
+    align-items: center;
+    width: var(--home-card-desc-width);
+    min-width: var(--home-card-desc-width);
+    padding: 0.15rem 0;
+  }
+
+  &__desc {
+    width: 100%;
+    min-height: 2.75rem;
+    margin: 0;
+    padding: 0.55rem 0.65rem;
+    font-size: 0.72rem;
+    line-height: 1.6;
+    letter-spacing: 0.02em;
+    color: var(--color-text-muted);
+    text-align: left;
+    background: color-mix(in srgb, var(--card-accent) 6%, var(--color-glass-bg));
+    border: 1px solid color-mix(in srgb, var(--card-accent) 10%, transparent);
+    border-radius: 0.625rem;
+    opacity: 0;
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    transition:
+      color 0.3s ease,
+      background-color 0.3s ease,
+      border-color 0.3s ease;
+  }
+
+  &:hover &__desc {
+    color: var(--color-text);
+    background: color-mix(in srgb, var(--card-accent) 9%, var(--color-glass-bg));
+    border-color: color-mix(in srgb, var(--card-accent) 16%, transparent);
   }
 
   &::before {
@@ -308,6 +369,7 @@ function pulseCta(event) {
     z-index: 1;
     margin: 0;
     line-height: 1.25;
+    font-size: 1rem;
   }
 
   &__action {
@@ -317,8 +379,8 @@ function pulseCta(event) {
     align-items: center;
     gap: 0.35rem;
     margin: auto 0 0;
-    padding-top: 0.35rem;
-    font-size: 0.8125rem;
+    padding-top: 0.15rem;
+    font-size: 0.75rem;
     letter-spacing: 0.01em;
     transition: color 0.3s ease;
   }
@@ -341,12 +403,39 @@ function pulseCta(event) {
   }
 
   @media (min-width: 640px) {
-    padding: 1.75rem;
+    padding: 1.35rem 1.5rem;
+    min-height: 8rem;
+
+    &__desc {
+      min-height: 2.95rem;
+      font-size: 0.78rem;
+      padding: 0.6rem 0.7rem;
+    }
+
+    &__action {
+      font-size: 0.8125rem;
+    }
+
+    &__title {
+      font-size: 1.25rem;
+    }
 
     &::after {
       left: 1.5rem;
       right: 1.5rem;
     }
+  }
+}
+
+@keyframes home-card-desc-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -381,6 +470,12 @@ function pulseCta(event) {
     &:hover &__arrow {
       transform: none;
     }
+  }
+
+  .home-category-grid > :deep(.motion-animate:not(.motion-await)) .home-category-card__desc {
+    animation: none;
+    opacity: 1;
+    transform: none;
   }
 }
 </style>

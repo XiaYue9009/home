@@ -34,6 +34,7 @@ const props = defineProps({
   autofocus: { type: Boolean, default: false },
   lockFirstHeading: { type: Boolean, default: false },
   hideToolbar: { type: Boolean, default: false },
+  demo: { type: Boolean, default: false },
 });
 
 const emit = defineEmits(['update:modelValue']);
@@ -46,7 +47,7 @@ const editorMode = ref('visual');
 const visualFocused = ref(false);
 let syncTimer = null;
 
-const editable = computed(() => !props.readonly && editStore.canEdit);
+const editable = computed(() => !props.readonly && (props.demo || editStore.canEdit));
 const isVisualMode = computed(() => editorMode.value === 'visual');
 const isMarkdownMode = computed(() => editorMode.value === 'markdown');
 const previewHtml = computed(() => renderMarkdown(props.modelValue || ''));
@@ -99,7 +100,7 @@ async function handleImageFile(file) {
 
   try {
     if (!isImageUploadEnabled()) {
-      window.alert('图床未配置，请在 .env 中设置 Supabase');
+      window.alert('图床未配置：请在 .env 设置 GITHUB_TOKEN，或配置 Supabase');
       return;
     }
 
@@ -348,7 +349,7 @@ onBeforeUnmount(() => {
     />
 
     <Teleport to="body">
-      <details v-if="editable" class="markdown-editor__shortcuts" open>
+      <details v-if="editable" class="markdown-editor__shortcuts">
         <summary>
           <EditorShortcutIcon name="markdown" />
           <span>快捷键参考（Typora）</span>
