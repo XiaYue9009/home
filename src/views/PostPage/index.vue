@@ -1,8 +1,11 @@
 <script setup>
 import GiscusComments from '@/components/post/GiscusComments/index.vue';
+import MotionEnter from '@/components/motion/MotionEnter/index.vue';
+import ScrollReveal from '@/components/motion/ScrollReveal/index.vue';
 import { CATEGORIES, formatDate, SITE } from '@/config/consts';
 import { usePostsStore } from '@/stores/posts.js';
 import { renderMarkdown } from '@/lib/content/markdown.js';
+import { MOTION_POST, MOTION_STAGGER } from '@/lib/motion/presets.js';
 
 const props = defineProps({
   slug: { type: String, required: true },
@@ -25,38 +28,92 @@ watch(
 <template>
   <article v-if="post" class="mx-auto max-w-3xl px-4 py-12 sm:px-6">
     <header class="mb-10">
-      <RouterLink
-        :to="`/${post.category}`"
-        class="mb-4 inline-flex items-center gap-1.5 text-sm font-medium"
-        :class="cat.color"
+      <MotionEnter
+        :animation="MOTION_POST.breadcrumb.animation"
+        :speed="MOTION_POST.breadcrumb.speed"
       >
-        <span>{{ cat.emoji }}</span>
-        <span>{{ cat.label }}</span>
-      </RouterLink>
-      <h1 class="font-display text-3xl font-bold tracking-tight text-heading sm:text-4xl">
+        <RouterLink
+          :to="`/${post.category}`"
+          class="mb-4 inline-flex items-center gap-1.5 text-sm font-medium"
+          :class="cat.color"
+        >
+          <span>{{ cat.emoji }}</span>
+          <span>{{ cat.label }}</span>
+        </RouterLink>
+      </MotionEnter>
+      <MotionEnter
+        tag="h1"
+        class="font-display text-3xl font-bold tracking-tight text-heading sm:text-4xl"
+        :animation="MOTION_POST.title.animation"
+        :delay="MOTION_POST.title.delay"
+      >
         {{ post.title }}
-      </h1>
-      <p class="mt-3 text-muted">{{ post.description }}</p>
-      <time :datetime="post.pubDate" class="mt-4 block text-sm text-subtle">
+      </MotionEnter>
+      <MotionEnter
+        tag="p"
+        class="mt-3 text-muted"
+        :animation="MOTION_POST.description.animation"
+        :delay="MOTION_POST.description.delay"
+      >
+        {{ post.description }}
+      </MotionEnter>
+      <MotionEnter
+        tag="time"
+        class="mt-4 block text-sm text-subtle"
+        :datetime="post.pubDate"
+        :animation="MOTION_POST.date.animation"
+        :delay="MOTION_POST.date.delay"
+        :speed="MOTION_POST.date.speed"
+      >
         {{ formatDate(new Date(post.pubDate)) }}
-      </time>
+      </MotionEnter>
       <ul v-if="post.tags?.length" class="mt-4 flex flex-wrap gap-2">
-        <li v-for="tag in post.tags" :key="tag" class="tag-pill rounded-full border border-theme px-3 py-1 text-xs">
+        <MotionEnter
+          v-for="(tag, index) in post.tags"
+          :key="tag"
+          tag="li"
+          class="tag-pill rounded-full border border-theme px-3 py-1 text-xs"
+          :animation="MOTION_POST.tags.animation"
+          :delay="MOTION_POST.tags.delay + index * MOTION_STAGGER.tag"
+        >
           #{{ tag }}
-        </li>
+        </MotionEnter>
       </ul>
     </header>
 
-    <div class="prose-moon" v-html="html" />
+    <ScrollReveal
+      class="prose-moon"
+      :animation="MOTION_POST.body.animation"
+      :delay="MOTION_POST.body.delay"
+    >
+      <div v-html="html" />
+    </ScrollReveal>
 
     <section class="mt-16 border-t border-theme pt-10">
-      <h2 class="mb-6 font-display text-xl font-semibold text-heading">评论</h2>
-      <GiscusComments />
+      <ScrollReveal
+        tag="h2"
+        class="mb-6 font-display text-xl font-semibold text-heading"
+        :animation="MOTION_POST.commentsTitle.animation"
+        :speed="MOTION_POST.commentsTitle.speed"
+      >
+        评论
+      </ScrollReveal>
+      <ScrollReveal :animation="MOTION_POST.comments.animation">
+        <GiscusComments />
+      </ScrollReveal>
     </section>
   </article>
 
   <div v-else class="mx-auto max-w-3xl px-4 py-24 text-center sm:px-6">
-    <p class="text-muted">文章不存在。</p>
-    <RouterLink to="/" class="btn-primary mt-8 inline-flex">返回首页</RouterLink>
+    <MotionEnter
+      tag="p"
+      class="text-muted"
+      :animation="MOTION_POST.notFound.animation"
+    >
+      文章不存在。
+    </MotionEnter>
+    <MotionEnter animation="backInUp" :delay="200">
+      <RouterLink to="/" class="btn-primary mt-8 inline-flex">返回首页</RouterLink>
+    </MotionEnter>
   </div>
 </template>

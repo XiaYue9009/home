@@ -1,8 +1,15 @@
 <script setup>
 import ConfirmDialog from '@/components/lol/ConfirmDialog/index.vue';
 import MarkdownEditor from '@/components/editor/MarkdownEditor/index.vue';
+import ScrollReveal from '@/components/motion/ScrollReveal/index.vue';
 import { useEditStore } from '@/stores/edit.js';
 import { useUpcomingStore } from '@/stores/upcoming.js';
+import {
+  MOTION_CATEGORY,
+  MOTION_STAGGER,
+  ENTRANCE_POOL,
+  pickCycleAnimation,
+} from '@/lib/motion/presets.js';
 
 const upcomingStore = useUpcomingStore();
 const editStore = useEditStore();
@@ -104,58 +111,75 @@ onBeforeUnmount(() => {
 <template>
   <section class="upcoming-grid-wrap">
     <div class="upcoming-grid">
-      <button
-        type="button"
-        class="upcoming-card upcoming-card--compose glass-card"
-        :class="{ 'is-disabled': !canEdit }"
-        :disabled="!canEdit"
-        :title="canEdit ? '新建卡片' : '请先在导航栏解锁编辑'"
-        @click="openCompose"
-      >
-        <span class="upcoming-card__compose-icon" aria-hidden="true">+</span>
-        <span class="upcoming-card__compose-label">新建</span>
-        <span class="upcoming-card__compose-hint">在此添加优化项</span>
-      </button>
-
-      <article
-        v-for="card in upcomingStore.cards"
-        :key="card.id"
-        class="upcoming-card glass-card glass-card-hover"
-        :class="{ 'is-disabled': !canEdit }"
-        :role="canEdit ? 'button' : undefined"
-        :tabindex="canEdit ? 0 : undefined"
-        :title="canEdit ? '编辑卡片' : '请先在导航栏解锁编辑'"
-        @click="openCard(card.id)"
-        @keydown.enter="openCard(card.id)"
-        @keydown.space.prevent="openCard(card.id)"
+      <ScrollReveal
+        :animation="MOTION_CATEGORY.upcomingCompose.animation"
+        :speed="MOTION_CATEGORY.upcomingCompose.speed"
       >
         <button
-          v-if="canEdit"
           type="button"
-          class="upcoming-card__delete"
-          aria-label="删除卡片"
-          title="删除"
-          @click="requestDelete(card, $event)"
+          class="upcoming-card upcoming-card--compose glass-card"
+          :class="{ 'is-disabled': !canEdit }"
+          :disabled="!canEdit"
+          :title="canEdit ? '新建卡片' : '请先在导航栏解锁编辑'"
+          @click="openCompose"
         >
-          <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-            <path
-              d="M6 2.5h4l.5 1.5H13v1.5H3V4h2.5L6 2.5zm1 3.5v6.5h1.5V6H7zm3 0v6.5H11.5V6H10zM4.5 14.5h7V6.5h-7v8z"
-              fill="currentColor"
-            />
-          </svg>
+          <span class="upcoming-card__compose-icon" aria-hidden="true">+</span>
+          <span class="upcoming-card__compose-label">新建</span>
+          <span class="upcoming-card__compose-hint">在此添加优化项</span>
         </button>
-        <h3 class="upcoming-card__title">{{ card.title }}</h3>
-        <p class="upcoming-card__excerpt">{{ upcomingStore.cardPreview(card) }}</p>
-        <time class="upcoming-card__time" :datetime="card.updatedAt">
-          <span class="upcoming-card__time-date">{{ formatCardTimeParts(card.updatedAt).date }}</span>
-          <span class="upcoming-card__time-clock">{{ formatCardTimeParts(card.updatedAt).time }}</span>
-        </time>
-      </article>
+      </ScrollReveal>
+
+      <ScrollReveal
+        v-for="(card, index) in upcomingStore.cards"
+        :key="card.id"
+        :animation="pickCycleAnimation(index, ENTRANCE_POOL.upcoming)"
+        :delay="(index + 1) * MOTION_STAGGER.card"
+      >
+        <article
+          class="upcoming-card glass-card glass-card-hover"
+          :class="{ 'is-disabled': !canEdit }"
+          :role="canEdit ? 'button' : undefined"
+          :tabindex="canEdit ? 0 : undefined"
+          :title="canEdit ? '编辑卡片' : '请先在导航栏解锁编辑'"
+          @click="openCard(card.id)"
+          @keydown.enter="openCard(card.id)"
+          @keydown.space.prevent="openCard(card.id)"
+        >
+          <button
+            v-if="canEdit"
+            type="button"
+            class="upcoming-card__delete"
+            aria-label="删除卡片"
+            title="删除"
+            @click="requestDelete(card, $event)"
+          >
+            <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+              <path
+                d="M6 2.5h4l.5 1.5H13v1.5H3V4h2.5L6 2.5zm1 3.5v6.5h1.5V6H7zm3 0v6.5H11.5V6H10zM4.5 14.5h7V6.5h-7v8z"
+                fill="currentColor"
+              />
+            </svg>
+          </button>
+          <h3 class="upcoming-card__title">{{ card.title }}</h3>
+          <p class="upcoming-card__excerpt">{{ upcomingStore.cardPreview(card) }}</p>
+          <time class="upcoming-card__time" :datetime="card.updatedAt">
+            <span class="upcoming-card__time-date">{{ formatCardTimeParts(card.updatedAt).date }}</span>
+            <span class="upcoming-card__time-clock">{{ formatCardTimeParts(card.updatedAt).time }}</span>
+          </time>
+        </article>
+      </ScrollReveal>
     </div>
 
-    <p v-if="!canEdit" class="upcoming-grid__hint text-subtle">
+    <ScrollReveal
+      v-if="!canEdit"
+      tag="p"
+      class="upcoming-grid__hint text-subtle"
+      :animation="MOTION_CATEGORY.upcomingHint.animation"
+      :speed="MOTION_CATEGORY.upcomingHint.speed"
+      :delay="(upcomingStore.cards.length + 1) * MOTION_STAGGER.card"
+    >
       解锁后可编辑卡片；点击默认卡片新增，点击已有卡片修改。
-    </p>
+    </ScrollReveal>
 
     <ConfirmDialog
       v-model:open="deleteConfirmOpen"
@@ -200,6 +224,11 @@ onBeforeUnmount(() => {
   gap: 1.25rem;
   grid-template-columns: minmax(0, 1fr);
 
+  > :deep(.motion-animate) {
+    display: flex;
+    min-width: 0;
+  }
+
   @media (min-width: 640px) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -230,11 +259,58 @@ onBeforeUnmount(() => {
   border: none;
   font: inherit;
   color: inherit;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  overflow: hidden;
+  transition:
+    transform 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.3s ease,
+    box-shadow 0.34s ease,
+    background-color 0.3s ease;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--color-accent) 12%, transparent) 0%,
+      transparent 55%
+    );
+    opacity: 0;
+    transition: opacity 0.35s ease;
+    pointer-events: none;
+  }
+
+  &:not(.is-disabled):hover {
+    transform: translateY(-5px);
+    border-color: color-mix(in srgb, var(--color-accent) 34%, var(--color-glass-border));
+    box-shadow:
+      0 14px 32px -10px color-mix(in srgb, var(--color-accent) 24%, transparent),
+      0 0 0 1px color-mix(in srgb, var(--color-accent) 10%, transparent);
+
+    &::after {
+      opacity: 1;
+    }
+  }
+
+  &:not(.is-disabled):focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--color-accent) 50%, transparent);
+    outline-offset: 3px;
+  }
 
   &.is-disabled {
     cursor: not-allowed;
     opacity: 0.72;
+  }
+
+  &__delete,
+  &__compose-icon,
+  &__compose-label,
+  &__compose-hint,
+  &__title,
+  &__excerpt,
+  &__time {
+    position: relative;
+    z-index: 1;
   }
 
   &__delete {
@@ -279,6 +355,19 @@ onBeforeUnmount(() => {
     justify-content: center;
     border: 1px dashed color-mix(in srgb, var(--color-accent) 45%, var(--color-border));
     background: color-mix(in srgb, var(--color-accent) 4%, var(--color-glass-bg));
+
+    &::after {
+      background: radial-gradient(
+        circle at 50% 40%,
+        color-mix(in srgb, var(--color-accent) 16%, transparent) 0%,
+        transparent 68%
+      );
+    }
+  }
+
+  &:not(.is-disabled).upcoming-card--compose:hover {
+    border-style: solid;
+    background: color-mix(in srgb, var(--color-accent) 9%, var(--color-glass-bg));
   }
 
   &__compose-icon {
@@ -292,17 +381,41 @@ onBeforeUnmount(() => {
     color: var(--color-accent-soft);
     font-size: 1.75rem;
     line-height: 1;
+    transition:
+      transform 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+      background-color 0.3s ease,
+      color 0.3s ease,
+      box-shadow 0.35s ease;
+  }
+
+  &:not(.is-disabled):hover &__compose-icon {
+    transform: scale(1.12) rotate(90deg);
+    background: color-mix(in srgb, var(--color-accent) 24%, transparent);
+    color: var(--color-accent);
+    box-shadow: 0 6px 18px -4px color-mix(in srgb, var(--color-accent) 35%, transparent);
   }
 
   &__compose-label {
     font-size: 1rem;
     font-weight: 600;
     color: var(--color-heading);
+    transition: color 0.3s ease, transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  &:not(.is-disabled):hover &__compose-label {
+    color: var(--color-accent-soft);
+    transform: translateY(-2px);
   }
 
   &__compose-hint {
     font-size: 0.8125rem;
     color: var(--color-text-muted);
+    transition: color 0.3s ease, opacity 0.3s ease;
+  }
+
+  &:not(.is-disabled):hover &__compose-hint {
+    color: var(--color-text-subtle);
+    opacity: 0.92;
   }
 
   &__title {
@@ -315,6 +428,12 @@ onBeforeUnmount(() => {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    transition: color 0.3s ease, transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  &:not(.is-disabled):hover &__title {
+    color: var(--color-accent-soft);
+    transform: translateX(4px);
   }
 
   &__excerpt {
@@ -328,6 +447,11 @@ onBeforeUnmount(() => {
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 4;
     overflow: hidden;
+    transition: color 0.3s ease;
+  }
+
+  &:not(.is-disabled):hover &__excerpt {
+    color: var(--color-text-subtle);
   }
 
   &__time {
@@ -336,6 +460,28 @@ onBeforeUnmount(() => {
     gap: 0.625rem;
     font-size: 0.8125rem;
     color: var(--color-text-muted);
+    transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  &:not(.is-disabled):hover &__time {
+    transform: translateY(-2px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .upcoming-card {
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+
+    &:not(.is-disabled):hover {
+      transform: none;
+    }
+
+    &:not(.is-disabled):hover &__compose-icon,
+    &:not(.is-disabled):hover &__compose-label,
+    &:not(.is-disabled):hover &__title,
+    &:not(.is-disabled):hover &__time {
+      transform: none;
+    }
   }
 }
 

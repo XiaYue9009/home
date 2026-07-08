@@ -5,7 +5,9 @@ import { buildPrimaryNavLinks, isNavLinkActive } from '../../../config/nav.js';
 import ThemeSwitcher from '../../ThemeSwitcher/index.vue';
 import WeatherWidget from '../../WeatherWidget/index.vue';
 import SiteLogo from '../SiteLogo/index.vue';
+import MotionEnter from '@/components/motion/MotionEnter/index.vue';
 import { useEditStore } from '@/stores/edit.js';
+import { MOTION_LAYOUT, MOTION_STAGGER } from '@/lib/motion/presets.js';
 
 const route = useRoute();
 const editStore = useEditStore();
@@ -25,21 +27,32 @@ function unlockEdit() {
 <template>
   <header class="header-bar">
     <div class="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
-      <RouterLink to="/" class="group flex shrink-0 items-center gap-2">
-        <SiteLogo />
-        <span class="font-display text-lg font-bold tracking-tight text-heading">{{ SITE.title }}</span>
-      </RouterLink>
+      <MotionEnter
+        :animation="MOTION_LAYOUT.logo.animation"
+        :speed="MOTION_LAYOUT.logo.speed"
+      >
+        <RouterLink to="/" class="group flex shrink-0 items-center gap-2">
+          <SiteLogo />
+          <span class="font-display text-lg font-bold tracking-tight text-heading">{{ SITE.title }}</span>
+        </RouterLink>
+      </MotionEnter>
 
       <nav class="hidden items-center gap-1 md:flex">
-        <RouterLink
-          v-for="link in primaryNavLinks"
+        <MotionEnter
+          v-for="(link, index) in primaryNavLinks"
           :key="link.key"
-          :to="link.to"
-          class="flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition"
-          :class="isActive(link.to) ? 'nav-link-active' : 'nav-link'"
+          :animation="MOTION_LAYOUT.navItem.animation"
+          :speed="MOTION_LAYOUT.navItem.speed"
+          :delay="index * MOTION_STAGGER.nav"
         >
-          {{ link.label }}
-        </RouterLink>
+          <RouterLink
+            :to="link.to"
+            class="flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition"
+            :class="isActive(link.to) ? 'nav-link-active' : 'nav-link'"
+          >
+            {{ link.label }}
+          </RouterLink>
+        </MotionEnter>
       </nav>
 
       <div class="group flex items-center gap-2 sm:gap-3">

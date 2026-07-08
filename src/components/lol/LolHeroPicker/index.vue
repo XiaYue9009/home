@@ -212,13 +212,20 @@ watch(
     border-radius: 0.75rem;
     background: transparent;
     cursor: pointer;
-    transition: border-color 0.2s ease, background-color 0.2s ease;
+    transition:
+      transform 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 0.25s ease,
+      background-color 0.25s ease,
+      box-shadow 0.32s ease;
 
     img {
       width: 2.5rem;
       height: 2.5rem;
       border-radius: 9999px;
       object-fit: cover;
+      transition:
+        transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 0.35s ease;
     }
 
     span {
@@ -230,15 +237,44 @@ watch(
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+      transition: color 0.25s ease, transform 0.3s ease;
     }
 
     &:hover {
-      border-color: color-mix(in srgb, var(--color-accent) 35%, transparent);
-      background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+      transform: translateY(-4px);
+      border-color: color-mix(in srgb, var(--color-accent) 38%, transparent);
+      background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+      box-shadow: 0 10px 22px -8px color-mix(in srgb, var(--color-accent) 28%, transparent);
+
+      img {
+        transform: scale(1.1);
+        box-shadow: 0 0 14px color-mix(in srgb, var(--color-accent) 38%, transparent);
+      }
 
       span {
         color: var(--color-heading);
+        transform: translateY(-1px);
       }
+    }
+
+    &:focus-visible {
+      outline: 2px solid color-mix(in srgb, var(--color-accent) 50%, transparent);
+      outline-offset: 2px;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lol-hero-picker__option {
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+
+    &:hover {
+      transform: none;
+    }
+
+    &:hover img,
+    &:hover span {
+      transform: none;
     }
   }
 }

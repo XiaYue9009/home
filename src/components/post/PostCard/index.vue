@@ -1,7 +1,7 @@
 <template>
   <RouterLink
     :to="`/posts/${post.slug}`"
-    class="glass-card glass-card-hover group block p-6 transition"
+    class="glass-card glass-card-hover motion-hover-lift group block p-6 transition"
   >
     <div class="mb-3 flex items-center justify-between gap-2">
       <span

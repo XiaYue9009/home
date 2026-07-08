@@ -1,0 +1,62 @@
+/* MoonHome 动画节奏（当前仅调 nature 主题） */
+
+:root,
+[data-theme='nature'] {
+  --motion-duration: 0.85s;
+  --motion-stagger: 85ms;
+}
+
+.motion-animate {
+  --animate-duration: var(--motion-duration);
+}
+
+.motion-page-enter {
+  --animate-duration: 0.42s;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.motion-await {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .motion-await {
+    opacity: 1;
+  }
+
+  .motion-animate,
+  .motion-page-enter {
+    animation: none !important;
+  }
+}
+
+.motion-hover-lift {
+  transition:
+    transform 0.28s ease,
+    border-color 0.28s ease,
+    background-color 0.28s ease,
+    box-shadow 0.28s ease;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 28px -8px color-mix(in srgb, var(--color-accent) 18%, transparent);
+  }
+}
+
+.motion-hover-zoom {
+  transition: transform 0.32s ease;
+
+  &:hover {
+    transform: scale(1.02);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .motion-hover-lift:hover,
+  .motion-hover-zoom:hover {
+    transform: none;
+  }
+}

@@ -2,10 +2,12 @@
 /** LOL 英雄详情页：左侧立绘与简介，右侧对线表（一屏布局）。 */
 import LolHeroProfile from '@/components/lol/LolHeroProfile/index.vue';
 import LolMatchupTable from '@/components/lol/LolMatchupTable/index.vue';
+import MotionEnter from '@/components/motion/MotionEnter/index.vue';
 import { fetchLolHeroDetail } from '@/lib/lol/index.js';
 import { resolveFeaturedHeroIds, isFeaturedHeroId } from '@/lib/lol/featured-heroes.js';
 import { getLolMatchups } from '@/data/lol/matchups/index.js';
 import { SITE } from '@/config/consts';
+import { MOTION_LOL_DETAIL } from '@/lib/motion/presets.js';
 
 const props = defineProps({
   heroId: { type: String, required: true },
@@ -58,26 +60,61 @@ watch(
 <template>
   <div class="lol-detail-page">
     <div class="lol-detail-page__shell mx-auto w-full max-w-[100rem] px-4 sm:px-6">
-      <button type="button" class="lol-detail-page__back text-link text-sm" @click="goList">
+      <MotionEnter
+        tag="button"
+        type="button"
+        class="lol-detail-page__back text-link text-sm"
+        :animation="MOTION_LOL_DETAIL.back.animation"
+        :speed="MOTION_LOL_DETAIL.back.speed"
+        @click="goList"
+      >
         ← 返回 LOL
-      </button>
+      </MotionEnter>
 
-      <p v-if="loading" class="text-muted">加载英雄…</p>
-      <p v-else-if="error" class="text-muted">英雄数据加载失败。</p>
+      <MotionEnter
+        v-if="loading"
+        tag="p"
+        class="text-muted"
+        :animation="MOTION_LOL_DETAIL.loading.animation"
+        speed="slow"
+      >
+        加载英雄…
+      </MotionEnter>
+      <MotionEnter
+        v-else-if="error"
+        tag="p"
+        class="text-muted"
+        animation="headShake"
+      >
+        英雄数据加载失败。
+      </MotionEnter>
 
       <div v-else-if="hero" class="lol-detail-grid">
-        <LolHeroProfile :hero="hero" compact art-only />
-        <div class="lol-detail-grid__main">
+        <MotionEnter
+          :animation="MOTION_LOL_DETAIL.profile.animation"
+          :delay="MOTION_LOL_DETAIL.profile.delay"
+        >
+          <LolHeroProfile :hero="hero" compact art-only />
+        </MotionEnter>
+        <MotionEnter
+          class="lol-detail-grid__main"
+          :animation="MOTION_LOL_DETAIL.main.animation"
+          :delay="MOTION_LOL_DETAIL.main.delay"
+        >
           <LolHeroProfile :hero="hero" bar-text />
-          <div class="lol-detail-grid__panel">
+          <MotionEnter
+            class="lol-detail-grid__panel"
+            :animation="MOTION_LOL_DETAIL.panel.animation"
+            :delay="MOTION_LOL_DETAIL.panel.delay"
+          >
             <LolMatchupTable
               compact
               :matchups="matchups"
               :hero-name="hero.name"
               :hero-id="heroId"
             />
-          </div>
-        </div>
+          </MotionEnter>
+        </MotionEnter>
       </div>
     </div>
   </div>

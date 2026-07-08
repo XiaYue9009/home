@@ -20,8 +20,10 @@
     "postbuild": "node scripts/spa-fallback.mjs"
   },
   "dependencies": {
+    "@lottiefiles/dotlottie-vue": "^0.11.18",
     "@supabase/supabase-js": "^2.108.2",
     "@tailwindcss/typography": "^0.5.16",
+    "animate.css": "^4.1.1",
     "element-plus": "^2.14.2",
     "marked": "^18.0.5",
     "pinia": "^3.0.4",

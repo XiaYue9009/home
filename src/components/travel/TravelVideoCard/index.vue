@@ -17,7 +17,7 @@ function formatCount(value) {
     :href="video.shareUrl"
     target="_blank"
     rel="noopener noreferrer"
-    class="travel-video-card glass-card glass-card-hover group block overflow-hidden transition"
+    class="travel-video-card glass-card glass-card-hover motion-hover-zoom group block overflow-hidden transition"
   >
     <div class="travel-video-card__cover relative aspect-[9/16] overflow-hidden bg-black/20">
       <img

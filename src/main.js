@@ -4,8 +4,10 @@ import ElementPlus from 'element-plus';
 import App from './App.vue';
 import router from './router';
 import { DEFAULT_THEME, THEME_STORAGE_KEY } from './config/themes';
+import 'animate.css';
 import 'element-plus/dist/index.css';
 import './styles/global.scss';
+import './styles/motion.scss';
 import './styles/element-plus.scss';
 
 const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) || DEFAULT_THEME;
