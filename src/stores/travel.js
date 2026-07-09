@@ -1,16 +1,25 @@
 import { defineStore } from 'pinia';
 import fallbackAccount from '@/data/travel/account.js';
+import fallbackGroups from '@/data/travel/groups.js';
 import fallbackVideos from '@/data/travel/videos.js';
 import {
   canFetchDouyinInBrowser,
   DEFAULT_MAX,
   fetchDouyinCollection,
+  getTargetCollectsKeywords,
 } from '@/lib/travel/douyin-collection.js';
 import { fetchDouyinCollectionCloud, isDouyinCloudEnabled } from '@/lib/travel/douyin-cloud.js';
+
+function flattenGroupVideos(groups) {
+  return (groups || []).flatMap((group) =>
+    (group.folders || []).flatMap((folder) => folder.videos || []),
+  );
+}
 
 export const useTravelStore = defineStore('travel', {
   state: () => ({
     account: null,
+    groups: [],
     videos: [],
     loading: false,
     loaded: false,
@@ -19,13 +28,39 @@ export const useTravelStore = defineStore('travel', {
   }),
   getters: {
     displayAccount: (state) => state.account || fallbackAccount,
-    displayVideos: (state) => (state.videos.length ? state.videos : fallbackVideos),
+    displayGroups: (state) => {
+      if (state.groups.length) return state.groups;
+      if (fallbackGroups.length) return fallbackGroups;
+      if (fallbackVideos.length) {
+        return [
+          {
+            keyword: '旅游',
+            label: '旅游',
+            folders: [{ id: 'cache', name: '本地缓存', total: fallbackVideos.length, videos: fallbackVideos }],
+          },
+        ];
+      }
+      return [];
+    },
+    displayVideos: (state) => {
+      const live = flattenGroupVideos(state.groups);
+      if (live.length) return live;
+      if (state.videos.length) return state.videos;
+      return fallbackVideos;
+    },
+    collectsKeywords: () => getTargetCollectsKeywords(),
+    hasDisplayContent() {
+      return this.displayGroups.some((group) =>
+        (group.folders || []).some((folder) => (folder.videos || []).length > 0),
+      );
+    },
   },
   actions: {
     applyFallback(message) {
       this.account = fallbackAccount;
+      this.groups = fallbackGroups;
       this.videos = fallbackVideos;
-      this.source = fallbackVideos.length ? 'cache' : null;
+      this.source = fallbackVideos.length || fallbackGroups.length ? 'cache' : null;
       this.error = message;
     },
 
@@ -37,14 +72,15 @@ export const useTravelStore = defineStore('travel', {
       this.error = null;
 
       const maxVideos = Number(import.meta.env.PUBLIC_DOUYIN_MAX_VIDEOS) || DEFAULT_MAX;
+      const keywords = getTargetCollectsKeywords();
 
       try {
         let result = null;
 
         if (canFetchDouyinInBrowser()) {
-          result = await fetchDouyinCollection(maxVideos);
+          result = await fetchDouyinCollection(maxVideos, keywords);
         } else if (isDouyinCloudEnabled()) {
-          result = await fetchDouyinCollectionCloud(maxVideos);
+          result = await fetchDouyinCollectionCloud(maxVideos, keywords);
         }
 
         if (!result) {
@@ -52,7 +88,8 @@ export const useTravelStore = defineStore('travel', {
         }
 
         this.account = result.account;
-        this.videos = result.videos;
+        this.groups = result.groups || [];
+        this.videos = result.videos || flattenGroupVideos(result.groups);
         this.source = result.source;
         this.loaded = true;
       } catch (err) {

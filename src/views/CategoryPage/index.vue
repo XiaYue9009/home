@@ -13,6 +13,7 @@ import { useEditStore } from '@/stores/edit.js';
 import { useLolStore } from '@/stores/lol.js';
 import UpcomingCardGrid from '@/components/upcoming/UpcomingCardGrid/index.vue';
 import SystemToolGrid from '@/components/tools/SystemToolGrid/index.vue';
+import StackLinkGrid from '@/components/stack/StackLinkGrid/index.vue';
 import {
   MOTION_CATEGORY,
   MOTION_STAGGER,
@@ -59,7 +60,7 @@ function refreshPulse(event) {
   <div class="page-shell page-shell--category">
     <header
       class="mb-10"
-      :class="{ 'category-page-header': category === 'lol' || category === 'travel' || category === 'upcoming' || category === 'tools' }"
+      :class="{ 'category-page-header': category === 'lol' || category === 'travel' || category === 'upcoming' || category === 'tools' || category === 'stack' }"
     >
       <div v-if="category === 'lol'" class="category-page-header__row">
         <MotionEnter :animation="MOTION_CATEGORY.icon.animation">
@@ -112,7 +113,7 @@ function refreshPulse(event) {
           :delay="MOTION_CATEGORY.desc.delay"
           :speed="MOTION_CATEGORY.desc.speed"
         >
-          抖音收藏 ·
+          抖音收藏夹 · {{ travelStore.collectsKeywords.join(' / ') }} ·
           <a
             v-if="travelStore.displayAccount.profileUrl"
             :href="travelStore.displayAccount.profileUrl"
@@ -174,6 +175,29 @@ function refreshPulse(event) {
           站内工具能力展示 · 点击卡片查看 Demo、功能点与实现思路
         </MotionEnter>
       </div>
+      <div v-else-if="category === 'stack'" class="category-page-header__row">
+        <MotionEnter :animation="MOTION_CATEGORY.icon.animation">
+          <CategoryIcon :category="category" size="lg" />
+        </MotionEnter>
+        <MotionEnter
+          tag="h1"
+          class="font-display text-3xl font-bold"
+          :class="cat.color"
+          :animation="MOTION_CATEGORY.title.animation"
+          :delay="MOTION_CATEGORY.title.delay"
+        >
+          {{ cat.label }}
+        </MotionEnter>
+        <MotionEnter
+          tag="p"
+          class="category-page-header__desc text-muted"
+          :animation="MOTION_CATEGORY.desc.animation"
+          :delay="MOTION_CATEGORY.desc.delay"
+          :speed="MOTION_CATEGORY.desc.speed"
+        >
+          项目技术栈选用
+        </MotionEnter>
+      </div>
       <template v-else>
         <MotionEnter :animation="MOTION_CATEGORY.icon.animation">
           <CategoryIcon :category="category" size="lg" />
@@ -207,13 +231,17 @@ function refreshPulse(event) {
       <SystemToolGrid />
     </section>
 
+    <section v-if="category === 'stack'" class="mb-14">
+      <StackLinkGrid />
+    </section>
+
     <section v-if="category === 'travel'" class="mb-14">
       <ScrollReveal
         class="mb-6 flex flex-wrap items-center justify-between gap-3"
         :animation="MOTION_CATEGORY.sectionTitle.animation"
         :speed="MOTION_CATEGORY.sectionTitle.speed"
       >
-        <h2 class="font-display text-xl font-semibold text-heading">收藏视频</h2>
+        <h2 class="font-display text-xl font-semibold text-heading">收藏夹</h2>
         <button
           type="button"
           class="btn-ghost text-sm"
@@ -232,28 +260,71 @@ function refreshPulse(event) {
         :animation="MOTION_CATEGORY.loading.animation"
         :speed="MOTION_CATEGORY.loading.speed"
       >
-        正在从抖音加载收藏…
+        正在从抖音加载「{{ travelStore.collectsKeywords.join(' / ') }}」收藏夹…
       </MotionEnter>
 
-      <div
-        v-else-if="travelStore.displayVideos.length"
-        class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-      >
-        <ScrollReveal
-          v-for="(video, index) in travelStore.displayVideos"
-          :key="video.id"
-          :animation="pickCycleAnimation(index, ENTRANCE_POOL.video)"
-          :delay="index * MOTION_STAGGER.video"
+      <template v-else-if="travelStore.hasDisplayContent">
+        <div
+          v-for="group in travelStore.displayGroups"
+          :key="group.keyword"
+          class="travel-group mb-12 last:mb-0"
         >
-          <TravelVideoCard :video="video" />
-        </ScrollReveal>
-      </div>
+          <ScrollReveal
+            class="mb-5"
+            :animation="MOTION_CATEGORY.sectionTitle.animation"
+            :speed="MOTION_CATEGORY.sectionTitle.speed"
+          >
+            <h3 class="font-display text-lg font-semibold text-heading">
+              {{ group.label }}
+              <span class="ml-2 text-sm font-normal text-subtle">
+                {{ group.folders.reduce((sum, f) => sum + (f.videos?.length || 0), 0) }} 条
+              </span>
+            </h3>
+          </ScrollReveal>
+
+          <div
+            v-if="!group.folders.length"
+            class="rounded-lg border border-dashed border-white/10 px-4 py-6 text-sm text-subtle"
+          >
+            暂无名称含「{{ group.keyword }}」的收藏夹
+          </div>
+
+          <div v-else class="space-y-10">
+            <div v-for="folder in group.folders" :key="folder.id">
+              <ScrollReveal
+                class="mb-4 flex flex-wrap items-baseline gap-x-3 gap-y-1"
+                :animation="MOTION_CATEGORY.sectionTitle.animation"
+                :speed="MOTION_CATEGORY.sectionTitle.speed"
+              >
+                <h4 class="text-base font-medium text-heading">{{ folder.name }}</h4>
+                <span class="text-xs text-subtle">{{ folder.videos?.length || 0 }} 条视频</span>
+              </ScrollReveal>
+
+              <div
+                v-if="folder.videos?.length"
+                class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+              >
+                <ScrollReveal
+                  v-for="(video, index) in folder.videos"
+                  :key="`${folder.id}-${video.id}`"
+                  :animation="pickCycleAnimation(index, ENTRANCE_POOL.video)"
+                  :delay="index * MOTION_STAGGER.video"
+                >
+                  <TravelVideoCard :video="video" />
+                </ScrollReveal>
+              </div>
+              <p v-else class="text-sm text-subtle">该收藏夹暂无视频</p>
+            </div>
+          </div>
+        </div>
+      </template>
 
       <ScrollReveal v-else :animation="MOTION_CATEGORY.empty.animation">
         <div class="glass-card p-8 text-center">
-          <p class="text-muted">暂无收藏视频。</p>
+          <p class="text-muted">暂无收藏夹视频。</p>
           <p class="mt-2 text-sm text-subtle">
-            本地开发请在 .env 配置 <code class="text-accent-soft">DOUYIN_COOKIE</code>，打开
+            默认读取名称含「{{ travelStore.collectsKeywords.join(' / ') }}」的收藏夹。本地开发请在 .env 配置
+            <code class="text-accent-soft">DOUYIN_COOKIE</code>，打开
             <code class="text-accent-soft">pnpm dev</code> 后访问本页；线上需部署 Supabase Edge Function
             <code class="text-accent-soft">fetch-douyin-collection</code>。
           </p>
@@ -332,7 +403,7 @@ function refreshPulse(event) {
     </section>
 
     <MotionEnter
-      v-else-if="category !== 'lol' && category !== 'travel' && category !== 'upcoming' && category !== 'tools'"
+      v-else-if="category !== 'lol' && category !== 'travel' && category !== 'upcoming' && category !== 'tools' && category !== 'stack'"
       tag="p"
       class="text-subtle"
       animation="fadeIn"

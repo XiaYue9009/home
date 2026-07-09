@@ -215,6 +215,10 @@ function pulseCta(event) {
     --card-accent: #6366f1;
   }
 
+  &[data-category='stack'] {
+    --card-accent: #2dd4bf;
+  }
+
   &__main {
     display: flex;
     flex-direction: column;

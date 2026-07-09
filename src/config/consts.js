@@ -22,7 +22,7 @@ export const CATEGORIES = {
     label: '旅行',
     emoji: '✈️',
     color: 'text-amber-400',
-    description: '抖音收藏的旅行灵感与目的地',
+    description: '抖音「旅游 / 美食」收藏夹灵感',
   },
   lol: {
     label: 'LOL',
@@ -41,6 +41,12 @@ export const CATEGORIES = {
     emoji: '🛠️',
     color: 'text-indigo-400',
     description: '工具能力展示、交互 Demo 与实现说明',
+  },
+  stack: {
+    label: '技术栈',
+    emoji: '🧩',
+    color: 'text-teal-400',
+    description: '项目技术栈',
   },
 };
 

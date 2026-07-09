@@ -1,6 +1,8 @@
 import { CATEGORIES } from './consts.js';
 
-/** 导航栏一级入口（始终展示） */
+/** 导航栏一级入口（始终展示）
+ * 仅保留核心入口；后续新增分类/模块（如技术栈）走首页分类卡进入，不要往这里加。
+ */
 export const NAV_PRIMARY_ENTRIES = [
   { type: 'home', to: '/', label: '首页' },
   { type: 'category', key: 'travel' },

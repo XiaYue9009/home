@@ -1,6 +1,6 @@
-/** 生产环境经 Supabase Edge Function 拉取抖音收藏（Cookie 保存在服务端）。 */
+/** 生产环境经 Supabase Edge Function 按关键词拉取抖音收藏夹（Cookie 保存在服务端）。 */
 import { createClient } from '@supabase/supabase-js';
-import { DEFAULT_MAX } from './douyin-collection.js';
+import { DEFAULT_MAX, getTargetCollectsKeywords } from './douyin-collection.js';
 
 let client = null;
 
@@ -19,20 +19,28 @@ function getClient() {
   return client;
 }
 
-export async function fetchDouyinCollectionCloud(maxVideos = DEFAULT_MAX) {
+export async function fetchDouyinCollectionCloud(
+  maxVideos = DEFAULT_MAX,
+  keywords = getTargetCollectsKeywords(),
+) {
   const supabase = getClient();
   if (!supabase) return null;
 
   const { data, error } = await supabase.functions.invoke('fetch-douyin-collection', {
-    body: { maxVideos: Number(maxVideos) || DEFAULT_MAX },
+    body: {
+      maxVideos: Number(maxVideos) || DEFAULT_MAX,
+      keywords: Array.isArray(keywords) ? keywords : [keywords],
+    },
   });
 
   if (error) throw error;
-  if (!data?.videos) throw new Error(data?.error || '云端未返回收藏数据');
+  if (data?.error) throw new Error(data.error);
+  if (!data?.groups && !data?.videos) throw new Error('云端未返回收藏数据');
 
   return {
     account: data.account || null,
-    videos: data.videos,
+    groups: data.groups || [],
+    videos: data.videos || [],
     source: 'cloud',
   };
 }
