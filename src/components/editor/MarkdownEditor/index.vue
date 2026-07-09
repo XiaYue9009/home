@@ -38,7 +38,7 @@ const props = defineProps({
   demo: { type: Boolean, default: false },
 });
 
-const emit = defineEmits(['update:modelValue']);
+const emit = defineEmits(['update:modelValue', 'blur']);
 
 const editStore = useEditStore();
 const textareaRef = ref(null);
@@ -94,6 +94,11 @@ function onVisualFocus() {
 function onVisualBlur() {
   visualFocused.value = false;
   syncVisualToMarkdown();
+  emit('blur');
+}
+
+function onMarkdownBlur() {
+  emit('blur');
 }
 
 async function handleImageFile(file) {
@@ -331,6 +336,7 @@ onBeforeUnmount(() => {
         :placeholder="placeholder"
         spellcheck="false"
         @input="onMarkdownInput"
+        @blur="onMarkdownBlur"
         @keydown="onMarkdownKeydown"
       />
 

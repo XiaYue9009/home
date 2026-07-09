@@ -5,16 +5,20 @@ import {
   normalizeNoteContent,
 } from '@/lib/upcoming/content-title.js';
 import {
-  cardExcerpt,
+  cardPreviewHtml,
   createUpcomingCardId,
   loadUpcomingCards,
-  persistUpcomingCards,
+  persistUpcomingCardDelete,
+  persistUpcomingCardFlags,
+  persistUpcomingCardReorder,
+  persistUpcomingCardUpsert,
   resolveUpcomingCards,
+  sortUpcomingCards,
 } from '@/lib/upcoming/cards.js';
 
 export const useUpcomingStore = defineStore('upcoming', {
   state: () => ({
-    cards: loadUpcomingCards(),
+    cards: sortUpcomingCards(loadUpcomingCards()),
     editorOpen: false,
     editorMode: 'create',
     editingId: null,
@@ -30,7 +34,7 @@ export const useUpcomingStore = defineStore('upcoming', {
     async load() {
       this.loading = true;
       try {
-        this.cards = await resolveUpcomingCards();
+        this.cards = sortUpcomingCards(await resolveUpcomingCards());
       } finally {
         this.loading = false;
       }
@@ -59,36 +63,94 @@ export const useUpcomingStore = defineStore('upcoming', {
     setDraftContent(value) {
       this.draftContent = value;
     },
+    /** 编辑完成时调用（失焦 / 弹窗关闭），有变更才同步 */
     async autosaveDraft() {
       const content = normalizeNoteContent(this.draftContent, this.draftTitle);
       if (!content.trim()) return;
 
       const title = extractTitleFromContent(content);
       this.draftContent = content;
+
+      if (this.editorMode === 'edit' && this.editingId) {
+        const card = this.cards.find((entry) => entry.id === this.editingId);
+        if (card && card.content === content && card.title === title) return;
+      }
+
       this.saving = true;
       const updatedAt = new Date().toISOString();
+      let targetCard = null;
 
       if (this.editorMode === 'create') {
-        const card = {
+        const insertAt = this.cards.findIndex((card) => !card.pinned && !card.done);
+        targetCard = {
           id: createUpcomingCardId(),
           title,
           content,
+          pinned: false,
+          done: false,
           updatedAt,
         };
-        this.cards.unshift(card);
+        if (insertAt === -1) {
+          const firstDone = this.cards.findIndex((entry) => entry.done);
+          if (firstDone === -1) this.cards.push(targetCard);
+          else this.cards.splice(firstDone, 0, targetCard);
+        } else {
+          this.cards.splice(insertAt, 0, targetCard);
+        }
         this.editorMode = 'edit';
-        this.editingId = card.id;
+        this.editingId = targetCard.id;
       } else if (this.editingId) {
         const card = this.cards.find((entry) => entry.id === this.editingId);
         if (card) {
           card.title = title;
           card.content = content;
           card.updatedAt = updatedAt;
+          targetCard = card;
         }
       }
 
-      await persistUpcomingCards(this.cards);
-      this.saving = false;
+      try {
+        if (!targetCard) return;
+        const result = await persistUpcomingCardUpsert(this.cards, targetCard);
+        this.cards = result.cards;
+      } finally {
+        this.saving = false;
+      }
+    },
+    async togglePin(id) {
+      const card = this.cards.find((entry) => entry.id === id);
+      if (!card || card.done) return;
+
+      card.pinned = !card.pinned;
+      card.updatedAt = new Date().toISOString();
+      const result = await persistUpcomingCardFlags(this.cards, id, {
+        pinned: card.pinned,
+        done: false,
+      });
+      this.cards = result.cards;
+    },
+    async toggleDone(id) {
+      const card = this.cards.find((entry) => entry.id === id);
+      if (!card) return;
+
+      card.done = !card.done;
+      if (card.done) card.pinned = false;
+      card.updatedAt = new Date().toISOString();
+      const result = await persistUpcomingCardFlags(this.cards, id, {
+        pinned: card.pinned,
+        done: card.done,
+      });
+      this.cards = result.cards;
+    },
+    async reorderCards(orderedIds) {
+      if (!Array.isArray(orderedIds) || !orderedIds.length) return;
+
+      const map = new Map(this.cards.map((card) => [card.id, card]));
+      const next = orderedIds.map((id) => map.get(id)).filter(Boolean);
+      if (next.length !== this.cards.length) return;
+
+      const result = await persistUpcomingCardReorder(next);
+      this.cards = result.cards;
     },
     async removeCard(id) {
       if (!id) return;
@@ -96,14 +158,15 @@ export const useUpcomingStore = defineStore('upcoming', {
       if (this.editingId === id) {
         this.closeEditor();
       }
-      await persistUpcomingCards(this.cards);
+      const result = await persistUpcomingCardDelete(this.cards, id);
+      this.cards = result.cards;
     },
     async removeEditingCard() {
       if (!this.editingId) return;
       await this.removeCard(this.editingId);
     },
     cardPreview(card) {
-      return cardExcerpt(card.content);
+      return cardPreviewHtml(card.content);
     },
   },
 });

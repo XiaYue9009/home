@@ -2,7 +2,6 @@
 import HeroMoon from '@/components/home/HeroMoon/index.vue';
 import LottieDemo from '@/components/home/LottieDemo/index.vue';
 import SiteAbout from '@/components/home/SiteAbout/index.vue';
-import SiteGithub from '@/components/home/SiteGithub/index.vue';
 import PostCard from '@/components/post/PostCard/index.vue';
 import CategoryIcon from '@/components/CategoryIcon/index.vue';
 import MotionEnter from '@/components/motion/MotionEnter/index.vue';
@@ -144,12 +143,6 @@ function pulseCta(event) {
 
   <ScrollReveal :animation="MOTION_HOME.about.animation">
     <SiteAbout />
-  </ScrollReveal>
-  <ScrollReveal
-    :animation="MOTION_HOME.github.animation"
-    :delay="MOTION_HOME.github.delay"
-  >
-    <SiteGithub />
   </ScrollReveal>
 </template>
 

@@ -6,6 +6,7 @@ export const NAV_PRIMARY_ENTRIES = [
   { type: 'category', key: 'travel' },
   { type: 'category', key: 'lol' },
   { type: 'category', key: 'upcoming' },
+  { type: 'category', key: 'tools' },
 ];
 
 /**
