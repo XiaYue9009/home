@@ -50,10 +50,58 @@ async function handleAddHero(hero) {
 }
 
 function refreshPulse(event) {
-  if (!travelStore.loading) {
+  if (!travelStore.loading && !travelStore.syncing) {
     triggerAnimate(event.currentTarget, 'rubberBand', { speed: 'faster' });
   }
 }
+
+async function handleTravelSync() {
+  try {
+    await travelStore.syncFromDouyin();
+  } catch {
+    // store 已写入 error
+  }
+}
+
+function handleGeoFilterChange(key, event) {
+  const value = event?.target?.value || '';
+  if (key === 'province') {
+    travelStore.setGeoFilter({ province: value, city: '', district: '', placeName: '' });
+    return;
+  }
+  if (key === 'city') {
+    travelStore.setGeoFilter({ city: value, district: '', placeName: '' });
+    return;
+  }
+  if (key === 'district') {
+    travelStore.setGeoFilter({ district: value, placeName: '' });
+    return;
+  }
+  travelStore.setGeoFilter({ [key]: value });
+}
+
+const filteredCityOptions = computed(() => {
+  const { province } = travelStore.geoFilter;
+  if (!province) return travelStore.geoOptions.cities;
+  return travelStore.allVideos
+    .filter((video) => video.province === province && video.city)
+    .map((video) => video.city)
+    .filter((value, index, arr) => arr.indexOf(value) === index)
+    .sort((a, b) => a.localeCompare(b, 'zh-CN'));
+});
+
+const filteredPlaceOptions = computed(() => {
+  const { province, city } = travelStore.geoFilter;
+  return travelStore.allVideos
+    .filter((video) => {
+      if (province && video.province !== province) return false;
+      if (city && video.city !== city) return false;
+      return Boolean(video.placeName);
+    })
+    .map((video) => video.placeName)
+    .filter((value, index, arr) => arr.indexOf(value) === index)
+    .sort((a, b) => a.localeCompare(b, 'zh-CN'));
+});
 </script>
 
 <template>
@@ -113,7 +161,7 @@ function refreshPulse(event) {
           :delay="MOTION_CATEGORY.desc.delay"
           :speed="MOTION_CATEGORY.desc.speed"
         >
-          抖音收藏夹 · {{ travelStore.collectsKeywords.join(' / ') }} ·
+          抖音收藏夹 · {{ travelStore.collectsFolders.join(' / ') }} · Supabase 库 ·
           <a
             v-if="travelStore.displayAccount.profileUrl"
             :href="travelStore.displayAccount.profileUrl"
@@ -123,10 +171,11 @@ function refreshPulse(event) {
           >
             {{ travelStore.displayAccount.nickname || '我的抖音' }}
           </a>
-          <span v-else>实时拉取</span>
-          <span v-if="travelStore.displayAccount.syncedAt" class="text-subtle">
-            · 更新于 {{ new Date(travelStore.displayAccount.syncedAt).toLocaleDateString('zh-CN') }}
+          <span v-else>已同步账号</span>
+          <span v-if="travelStore.lastSyncLabel" class="text-subtle">
+            · 最近同步 {{ travelStore.lastSyncLabel }}
           </span>
+          <span v-if="travelStore.isAutoSyncDay" class="text-subtle"> · 今日为定时同步日</span>
         </MotionEnter>
       </div>
       <div v-else-if="category === 'upcoming'" class="category-page-header__row">
@@ -241,15 +290,81 @@ function refreshPulse(event) {
         :animation="MOTION_CATEGORY.sectionTitle.animation"
         :speed="MOTION_CATEGORY.sectionTitle.speed"
       >
-        <h2 class="font-display text-xl font-semibold text-heading">收藏夹</h2>
+        <div class="flex flex-wrap items-center gap-3">
+          <h2 class="font-display text-xl font-semibold text-heading">收藏夹</h2>
+          <div class="travel-view-toggle flex gap-1 rounded-full bg-white/5 p-1">
+            <button
+              type="button"
+              class="travel-view-toggle__btn"
+              :class="{ 'travel-view-toggle__btn--active': travelStore.viewMode === 'folder' }"
+              @click="travelStore.setViewMode('folder')"
+            >
+              收藏夹
+            </button>
+            <button
+              type="button"
+              class="travel-view-toggle__btn"
+              :class="{ 'travel-view-toggle__btn--active': travelStore.viewMode === 'geo' }"
+              @click="travelStore.setViewMode('geo')"
+            >
+              地理分组
+            </button>
+          </div>
+        </div>
         <button
           type="button"
           class="btn-ghost text-sm"
-          :disabled="travelStore.loading"
-          @click="travelStore.load(true)"
+          :disabled="travelStore.loading || travelStore.syncing"
+          @click="handleTravelSync"
           @mouseenter="refreshPulse"
         >
-          {{ travelStore.loading ? '加载中…' : '刷新' }}
+          {{ travelStore.syncing ? '同步中…' : '手动同步' }}
+        </button>
+      </ScrollReveal>
+
+      <ScrollReveal
+        v-if="travelStore.viewMode === 'folder'"
+        class="mb-6 flex flex-wrap gap-3"
+        :animation="MOTION_CATEGORY.sectionTitle.animation"
+        :speed="MOTION_CATEGORY.sectionTitle.speed"
+      >
+        <label class="travel-geo-filter">
+          <span>省份</span>
+          <select
+            :value="travelStore.geoFilter.province"
+            class="travel-geo-filter__select"
+            @change="handleGeoFilterChange('province', $event)"
+          >
+            <option value="">全部</option>
+            <option v-for="item in travelStore.geoOptions.provinces" :key="item" :value="item">
+              {{ item }}
+            </option>
+          </select>
+        </label>
+        <label class="travel-geo-filter">
+          <span>城市</span>
+          <select
+            :value="travelStore.geoFilter.city"
+            class="travel-geo-filter__select"
+            @change="handleGeoFilterChange('city', $event)"
+          >
+            <option value="">全部</option>
+            <option v-for="item in filteredCityOptions" :key="item" :value="item">{{ item }}</option>
+          </select>
+        </label>
+        <label class="travel-geo-filter">
+          <span>具体地名</span>
+          <select
+            :value="travelStore.geoFilter.placeName"
+            class="travel-geo-filter__select"
+            @change="handleGeoFilterChange('placeName', $event)"
+          >
+            <option value="">全部</option>
+            <option v-for="item in filteredPlaceOptions" :key="item" :value="item">{{ item }}</option>
+          </select>
+        </label>
+        <button type="button" class="btn-ghost text-sm" @click="travelStore.resetGeoFilter()">
+          清除筛选
         </button>
       </ScrollReveal>
 
@@ -260,10 +375,25 @@ function refreshPulse(event) {
         :animation="MOTION_CATEGORY.loading.animation"
         :speed="MOTION_CATEGORY.loading.speed"
       >
-        正在从抖音加载「{{ travelStore.collectsKeywords.join(' / ') }}」收藏夹…
+        正在从 Supabase 加载旅行视频…
+      </MotionEnter>
+
+      <MotionEnter
+        v-else-if="travelStore.syncing"
+        tag="p"
+        class="text-muted"
+        :animation="MOTION_CATEGORY.loading.animation"
+        :speed="MOTION_CATEGORY.loading.speed"
+      >
+        正在从抖音增量同步「{{ travelStore.collectsFolders.join(' / ') }}」…
       </MotionEnter>
 
       <template v-else-if="travelStore.hasDisplayContent">
+        <p v-if="travelStore.syncInfo" class="mb-4 text-sm text-subtle">
+          本次同步：新增 {{ travelStore.syncInfo.inserted }} 条，跳过 {{ travelStore.syncInfo.skipped }} 条，库内共
+          {{ travelStore.syncInfo.total }} 条
+        </p>
+
         <div
           v-for="group in travelStore.displayGroups"
           :key="group.keyword"
@@ -286,7 +416,7 @@ function refreshPulse(event) {
             v-if="!group.folders.length"
             class="rounded-lg border border-dashed border-white/10 px-4 py-6 text-sm text-subtle"
           >
-            暂无名称含「{{ group.keyword }}」的收藏夹
+            暂无{{ travelStore.viewMode === 'geo' ? '地理' : '收藏夹' }}数据
           </div>
 
           <div v-else class="space-y-10">
@@ -313,7 +443,7 @@ function refreshPulse(event) {
                   <TravelVideoCard :video="video" />
                 </ScrollReveal>
               </div>
-              <p v-else class="text-sm text-subtle">该收藏夹暂无视频</p>
+              <p v-else class="text-sm text-subtle">该分组暂无视频</p>
             </div>
           </div>
         </div>
@@ -321,19 +451,18 @@ function refreshPulse(event) {
 
       <ScrollReveal v-else :animation="MOTION_CATEGORY.empty.animation">
         <div class="glass-card p-8 text-center">
-          <p class="text-muted">暂无收藏夹视频。</p>
+          <p class="text-muted">暂无旅行视频。</p>
           <p class="mt-2 text-sm text-subtle">
-            默认读取名称含「{{ travelStore.collectsKeywords.join(' / ') }}」的收藏夹。本地开发请在 .env 配置
-            <code class="text-accent-soft">DOUYIN_COOKIE</code>，打开
-            <code class="text-accent-soft">pnpm dev</code> 后访问本页；线上需部署 Supabase Edge Function
-            <code class="text-accent-soft">fetch-douyin-collection</code>。
+            默认读取名称含「{{ travelStore.collectsFolders.join(' / ') }}」的收藏夹。每月 1 号、16 号自动从抖音增量同步，其余时间读取
+            Supabase。点击「手动同步」可立即拉取新增视频。
           </p>
         </div>
       </ScrollReveal>
 
       <p v-if="travelStore.error && travelStore.source === 'cache'" class="mt-4 text-sm text-subtle">
-        实时加载失败（{{ travelStore.error }}），已显示本地缓存。
+        加载失败（{{ travelStore.error }}），已显示本地缓存。
       </p>
+      <p v-else-if="travelStore.error" class="mt-4 text-sm text-subtle">{{ travelStore.error }}</p>
     </section>
 
     <section v-if="category === 'lol'" class="mb-14">
@@ -457,6 +586,36 @@ function refreshPulse(event) {
 @media (prefers-reduced-motion: reduce) {
   :deep(.lol-section-add-btn:not(.is-disabled):hover) {
     transform: none;
+  }
+}
+
+.travel-view-toggle__btn {
+  border-radius: 9999px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--color-muted, #94a3b8);
+  transition: background-color 0.2s ease, color 0.2s ease;
+
+  &--active {
+    background: rgb(255 255 255 / 12%);
+    color: var(--color-heading, #f8fafc);
+  }
+}
+
+.travel-geo-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--color-muted, #94a3b8);
+
+  &__select {
+    min-width: 7rem;
+    border-radius: 0.5rem;
+    border: 1px solid rgb(255 255 255 / 10%);
+    background: rgb(0 0 0 / 20%);
+    padding: 0.375rem 0.625rem;
+    color: var(--color-heading, #f8fafc);
   }
 }
 </style>

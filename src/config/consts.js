@@ -22,7 +22,7 @@ export const CATEGORIES = {
     label: '旅行',
     emoji: '✈️',
     color: 'text-amber-400',
-    description: '抖音「旅游 / 美食」收藏夹灵感',
+    description: '抖音收藏夹 · Supabase 持久化 · 地理分组',
   },
   lol: {
     label: 'LOL',

@@ -1,9 +1,15 @@
-/** 抖音网页版「我的收藏夹」按关键词拉取与归一化。 */
+/** 抖音网页版「我的收藏夹」按关键词模糊拉取与归一化。 */
+
+import {
+  extractGeoFromVideo,
+  extractPoiNameFromAweme,
+  extractTopicsFromAweme,
+} from '@/lib/travel/geo-extract.js';
 
 export const PAGE_SIZE = 20;
 export const DEFAULT_MAX = 60;
-/** 旅行页默认展示的收藏夹名称关键词（名称包含即匹配）。 */
-export const DEFAULT_COLLECTS_KEYWORDS = ['旅游', '美食'];
+/** 旅行页默认展示的收藏夹关键词（名称包含即匹配）。 */
+export const DEFAULT_COLLECTS_FOLDERS = ['旅游', '美食'];
 
 const COLLECTS_LIST_PATH = '/aweme/v1/web/collects/list/';
 const COLLECTS_VIDEO_PATH = '/aweme/v1/web/collects/video/list/';
@@ -41,11 +47,16 @@ export function pickCover(aweme) {
   return candidates.find(Boolean) || '';
 }
 
-export function normalizeVideo(aweme) {
+export function normalizeVideo(aweme, folderMeta = {}) {
   const id = String(aweme?.aweme_id || '');
+  const title = (aweme?.desc || '无标题').replace(/\s+/g, ' ').trim();
+  const topics = extractTopicsFromAweme(aweme);
+  const poiName = extractPoiNameFromAweme(aweme);
+  const geo = extractGeoFromVideo({ title, topics, poiName });
+
   return {
     id,
-    title: (aweme?.desc || '无标题').replace(/\s+/g, ' ').trim(),
+    title,
     cover: pickCover(aweme),
     author: aweme?.author?.nickname || '',
     diggCount: aweme?.statistics?.digg_count ?? 0,
@@ -56,6 +67,16 @@ export function normalizeVideo(aweme) {
     createTime: aweme?.create_time
       ? new Date(aweme.create_time * 1000).toISOString()
       : null,
+    folderId: folderMeta.id || '',
+    folderName: folderMeta.name || '',
+    category: folderMeta.category || folderMeta.name || '',
+    topics,
+    poiName,
+    province: geo.province,
+    city: geo.city,
+    district: geo.district,
+    placeName: geo.placeName,
+    geoLabel: geo.label,
   };
 }
 
@@ -93,19 +114,31 @@ export function getDouyinApiBase() {
   return base ? base.replace(/\/$/, '') : '';
 }
 
-/** 解析关键词列表：支持逗号/顿号分隔。 */
-export function parseCollectsKeywords(value) {
+/** 解析收藏夹关键词：支持逗号/顿号分隔，名称包含即匹配。 */
+export function parseCollectsFolderNames(value) {
   const raw = String(value ?? '').trim();
-  if (!raw) return [...DEFAULT_COLLECTS_KEYWORDS];
+  if (!raw) return [...DEFAULT_COLLECTS_FOLDERS];
   const list = raw
     .split(/[,，、|]/)
     .map((item) => item.trim())
     .filter(Boolean);
-  return list.length ? list : [...DEFAULT_COLLECTS_KEYWORDS];
+  return list.length ? list : [...DEFAULT_COLLECTS_FOLDERS];
 }
 
+/** @deprecated 兼容旧配置名 */
+export function parseCollectsKeywords(value) {
+  return parseCollectsFolderNames(value);
+}
+
+export function getTargetCollectsFolderNames() {
+  const folders = readPublicEnv('PUBLIC_DOUYIN_COLLECTS_FOLDERS');
+  const legacy = readPublicEnv('PUBLIC_DOUYIN_COLLECTS_KEYWORDS');
+  return parseCollectsFolderNames(folders || legacy);
+}
+
+/** @deprecated */
 export function getTargetCollectsKeywords() {
-  return parseCollectsKeywords(readPublicEnv('PUBLIC_DOUYIN_COLLECTS_KEYWORDS'));
+  return getTargetCollectsFolderNames();
 }
 
 function buildUrl(path, query = {}) {
@@ -163,9 +196,11 @@ export async function fetchCollectFolders(fetchJson = fetchDouyinJson, buildList
   return folders;
 }
 
-/** 名称包含关键词的收藏夹（按关键词分组，同一夹只归入首次命中的关键词）。 */
-export function groupFoldersByKeywords(folders, keywords = DEFAULT_COLLECTS_KEYWORDS) {
-  const keys = (keywords?.length ? keywords : DEFAULT_COLLECTS_KEYWORDS).map((k) => String(k).trim()).filter(Boolean);
+/** 名称包含关键词的收藏夹（同一夹只归入首次命中的关键词）。 */
+export function groupFoldersByKeywords(folders, keywords = DEFAULT_COLLECTS_FOLDERS) {
+  const keys = (keywords?.length ? keywords : DEFAULT_COLLECTS_FOLDERS)
+    .map((keyword) => String(keyword).trim())
+    .filter(Boolean);
   const used = new Set();
 
   return keys.map((keyword) => {
@@ -180,12 +215,18 @@ export function groupFoldersByKeywords(folders, keywords = DEFAULT_COLLECTS_KEYW
   });
 }
 
+/** @deprecated 别名，逻辑同 groupFoldersByKeywords */
+export function matchFoldersByNames(folders, names = DEFAULT_COLLECTS_FOLDERS) {
+  return groupFoldersByKeywords(folders, names);
+}
+
 /** 拉取指定收藏夹内的视频。 */
 export async function fetchCollectFolderVideos(
   collectsId,
   maxVideos = DEFAULT_MAX,
   fetchJson = fetchDouyinJson,
   buildVideoUrl = buildUrl,
+  folderMeta = {},
 ) {
   const videos = [];
   let cursor = '0';
@@ -206,7 +247,12 @@ export async function fetchCollectFolderVideos(
 
     for (const aweme of list) {
       if (videos.length >= max) break;
-      videos.push(normalizeVideo(aweme));
+      videos.push(
+        normalizeVideo(aweme, {
+          ...folderMeta,
+          category: folderMeta.category || folderMeta.name || '',
+        }),
+      );
     }
 
     hasMore = data?.has_more;
@@ -235,33 +281,38 @@ async function mapPool(items, concurrency, mapper) {
 }
 
 /**
- * 通过浏览器可用的代理，按关键词拉取「我的收藏夹」中匹配的收藏夹视频。
- * 默认关键词：旅游、美食；可用 PUBLIC_DOUYIN_COLLECTS_KEYWORDS 覆盖。
+ * 通过浏览器可用的代理，按关键词模糊拉取「我的收藏夹」视频。
+ * 默认：旅游、美食；可用 PUBLIC_DOUYIN_COLLECTS_FOLDERS 覆盖。
  */
 export async function fetchDouyinCollection(
   maxVideos = DEFAULT_MAX,
-  keywords = getTargetCollectsKeywords(),
+  folderNames = getTargetCollectsFolderNames(),
 ) {
   const max = Number(maxVideos) || DEFAULT_MAX;
   const syncedAt = new Date().toISOString();
-  const keywordList = parseCollectsKeywords(
-    Array.isArray(keywords) ? keywords.join(',') : keywords,
+  const names = parseCollectsFolderNames(
+    Array.isArray(folderNames) ? folderNames.join(',') : folderNames,
   );
 
   const [profile, allFolders] = await Promise.all([fetchProfile(), fetchCollectFolders()]);
-  const grouped = groupFoldersByKeywords(allFolders, keywordList);
+  const grouped = groupFoldersByKeywords(allFolders, names);
   const matchedCount = grouped.reduce((sum, g) => sum + g.folders.length, 0);
 
   if (!matchedCount) {
-    const names = allFolders.map((f) => f.name).filter(Boolean);
-    const hint = names.length ? `现有：${names.slice(0, 8).join('、')}` : '当前账号下暂无收藏夹';
-    throw new Error(`未找到名称含「${keywordList.join(' / ')}」的收藏夹。${hint}`);
+    const namesHint = allFolders.map((f) => f.name).filter(Boolean);
+    throw new Error(
+      `未找到名称含「${names.join(' / ')}」的收藏夹。${namesHint.length ? `现有：${namesHint.slice(0, 8).join('、')}` : ''}`,
+    );
   }
 
   const groups = [];
   for (const group of grouped) {
     const foldersWithVideos = await mapPool(group.folders, 3, async (folder) => {
-      const videos = await fetchCollectFolderVideos(folder.id, max);
+      const videos = await fetchCollectFolderVideos(folder.id, max, fetchDouyinJson, buildUrl, {
+        id: folder.id,
+        name: folder.name,
+        category: group.keyword,
+      });
       return { ...folder, videos };
     });
     groups.push({

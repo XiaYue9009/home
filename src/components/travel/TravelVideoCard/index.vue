@@ -34,6 +34,7 @@ function formatCount(value) {
 
     <div class="p-4">
       <h3 class="line-clamp-2 text-sm font-medium leading-snug text-heading">{{ video.title }}</h3>
+      <p v-if="video.geoLabel" class="mt-2 text-xs text-subtle">{{ video.geoLabel }}</p>
       <div class="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-subtle">
         <span v-if="video.playCount">▶ {{ formatCount(video.playCount) }}</span>
         <span v-if="video.diggCount">♥ {{ formatCount(video.diggCount) }}</span>

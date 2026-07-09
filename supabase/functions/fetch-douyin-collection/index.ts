@@ -9,7 +9,7 @@ const COLLECTS_VIDEO_URL = 'https://www.douyin.com/aweme/v1/web/collects/video/l
 const PROFILE_URL = 'https://www.douyin.com/aweme/v1/web/user/profile/self/';
 const PAGE_SIZE = 20;
 const DEFAULT_MAX = 60;
-const DEFAULT_KEYWORDS = ['旅游', '美食'];
+const DEFAULT_FOLDERS = ['旅游', '美食'];
 
 const COMMON_PARAMS = 'device_platform=webapp&aid=6383&channel=channel_pc_web&pc_client_type=1&version_code=190500&version_name=19.5.0';
 
@@ -78,15 +78,39 @@ function normalizeCollectFolder(item: Record<string, unknown>) {
   };
 }
 
-function parseKeywords(input: unknown): string[] {
+function parseFolderNames(input: unknown): string[] {
   if (Array.isArray(input)) {
     const list = input.map((item) => String(item || '').trim()).filter(Boolean);
-    return list.length ? list : [...DEFAULT_KEYWORDS];
+    return list.length ? list : [...DEFAULT_FOLDERS];
   }
   const raw = String(input ?? '').trim();
-  if (!raw) return [...DEFAULT_KEYWORDS];
+  if (!raw) return [...DEFAULT_FOLDERS];
   const list = raw.split(/[,，、|]/).map((item) => item.trim()).filter(Boolean);
-  return list.length ? list : [...DEFAULT_KEYWORDS];
+  return list.length ? list : [...DEFAULT_FOLDERS];
+}
+
+function groupFoldersByKeywords(
+  folders: Array<{ id: string; name: string; total: number }>,
+  keywords: string[],
+) {
+  const used = new Set<string>();
+  return keywords.map((keyword) => {
+    const matched = [];
+    for (const folder of folders) {
+      if (used.has(folder.id)) continue;
+      if (!folder.name.includes(keyword)) continue;
+      used.add(folder.id);
+      matched.push(folder);
+    }
+    return { keyword, label: keyword, folders: matched };
+  });
+}
+
+function matchFoldersByNames(
+  folders: Array<{ id: string; name: string; total: number }>,
+  names: string[],
+) {
+  return groupFoldersByKeywords(folders, names);
 }
 
 async function fetchJson(url: string, cookie: string, init: RequestInit = {}) {
@@ -122,24 +146,12 @@ async function fetchCollectFolders(cookie: string) {
   return folders;
 }
 
-function groupFoldersByKeywords(
-  folders: Array<{ id: string; name: string; total: number }>,
-  keywords: string[],
+async function fetchCollectFolderVideos(
+  cookie: string,
+  collectsId: string,
+  maxVideos: number,
+  folderMeta: { id: string; name: string; category: string },
 ) {
-  const used = new Set<string>();
-  return keywords.map((keyword) => {
-    const matched = [];
-    for (const folder of folders) {
-      if (used.has(folder.id)) continue;
-      if (!folder.name.includes(keyword)) continue;
-      used.add(folder.id);
-      matched.push(folder);
-    }
-    return { keyword, label: keyword, folders: matched };
-  });
-}
-
-async function fetchCollectFolderVideos(cookie: string, collectsId: string, maxVideos: number) {
   const videos = [];
   let cursor = '0';
   let hasMore: unknown = 1;
@@ -153,7 +165,12 @@ async function fetchCollectFolderVideos(cookie: string, collectsId: string, maxV
 
     for (const aweme of data?.aweme_list || []) {
       if (videos.length >= maxVideos) break;
-      videos.push(normalizeVideo(aweme));
+      videos.push({
+        ...normalizeVideo(aweme),
+        folderId: folderMeta.id,
+        folderName: folderMeta.name,
+        category: folderMeta.category,
+      });
     }
 
     hasMore = data?.has_more;
@@ -198,8 +215,8 @@ serve(async (req) => {
 
     const body = req.method === 'POST' ? await req.json().catch(() => ({})) : {};
     const maxVideos = Number(body?.maxVideos) || DEFAULT_MAX;
-    const keywords = parseKeywords(
-      body?.keywords ?? body?.collectsName ?? Deno.env.get('DOUYIN_COLLECTS_KEYWORDS'),
+    const folderNames = parseFolderNames(
+      body?.folderNames ?? body?.keywords ?? body?.collectsName ?? Deno.env.get('DOUYIN_COLLECTS_FOLDERS') ?? Deno.env.get('DOUYIN_COLLECTS_KEYWORDS'),
     );
     const syncedAt = new Date().toISOString();
 
@@ -208,13 +225,13 @@ serve(async (req) => {
       fetchCollectFolders(cookie),
     ]);
 
-    const grouped = groupFoldersByKeywords(allFolders, keywords);
+    const grouped = groupFoldersByKeywords(allFolders, folderNames);
     const matchedCount = grouped.reduce((sum, g) => sum + g.folders.length, 0);
     if (!matchedCount) {
       const names = allFolders.map((f) => f.name).filter(Boolean);
       const hint = names.length ? `现有：${names.slice(0, 8).join('、')}` : '当前账号下暂无收藏夹';
       return new Response(
-        JSON.stringify({ error: `未找到名称含「${keywords.join(' / ')}」的收藏夹。${hint}` }),
+        JSON.stringify({ error: `未找到名称含「${folderNames.join(' / ')}」的收藏夹。${hint}` }),
         { status: 404, headers: { 'Content-Type': 'application/json' } },
       );
     }
@@ -222,7 +239,11 @@ serve(async (req) => {
     const groups = [];
     for (const group of grouped) {
       const foldersWithVideos = await mapPool(group.folders, 3, async (folder) => {
-        const videos = await fetchCollectFolderVideos(cookie, folder.id, maxVideos);
+        const videos = await fetchCollectFolderVideos(cookie, folder.id, maxVideos, {
+          id: folder.id,
+          name: folder.name,
+          category: group.keyword,
+        });
         return { ...folder, videos };
       });
       groups.push({

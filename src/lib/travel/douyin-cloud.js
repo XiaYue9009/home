@@ -1,6 +1,6 @@
-/** 生产环境经 Supabase Edge Function 按关键词拉取抖音收藏夹（Cookie 保存在服务端）。 */
+/** 生产环境经 Supabase Edge Function 按收藏夹名称拉取抖音视频。 */
 import { createClient } from '@supabase/supabase-js';
-import { DEFAULT_MAX, getTargetCollectsKeywords } from './douyin-collection.js';
+import { DEFAULT_MAX, getTargetCollectsFolderNames } from './douyin-collection.js';
 
 let client = null;
 
@@ -21,7 +21,7 @@ function getClient() {
 
 export async function fetchDouyinCollectionCloud(
   maxVideos = DEFAULT_MAX,
-  keywords = getTargetCollectsKeywords(),
+  folderNames = getTargetCollectsFolderNames(),
 ) {
   const supabase = getClient();
   if (!supabase) return null;
@@ -29,7 +29,8 @@ export async function fetchDouyinCollectionCloud(
   const { data, error } = await supabase.functions.invoke('fetch-douyin-collection', {
     body: {
       maxVideos: Number(maxVideos) || DEFAULT_MAX,
-      keywords: Array.isArray(keywords) ? keywords : [keywords],
+      folderNames: Array.isArray(folderNames) ? folderNames : [folderNames],
+      keywords: Array.isArray(folderNames) ? folderNames : [folderNames],
     },
   });
 
