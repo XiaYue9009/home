@@ -1,5 +1,10 @@
 <script setup>
 import {
+  assertValidImageFile,
+  IMAGE_ACCEPT_ATTR,
+  IMAGE_FORMAT_HINT,
+} from '@/lib/editor/image-upload.js';
+import {
   checkPicGoAvailable,
   isPicGoConfigured,
   resetPicGoAvailabilityCache,
@@ -49,6 +54,13 @@ async function handleUpload(event) {
   event.target.value = '';
   if (!file) return;
 
+  try {
+    assertValidImageFile(file);
+  } catch (err) {
+    error.value = err?.message || '图片校验失败';
+    return;
+  }
+
   uploading.value = true;
   error.value = '';
 
@@ -94,7 +106,7 @@ onMounted(refreshStatus);
     <label class="picgo-tool-demo__upload glass-card">
       <input
         type="file"
-        accept="image/*"
+        :accept="IMAGE_ACCEPT_ATTR"
         :disabled="uploading || status !== 'online'"
         @change="handleUpload"
       />
@@ -102,7 +114,7 @@ onMounted(refreshStatus);
         {{ uploading ? '上传中…' : '选择图片上传' }}
       </span>
       <span class="picgo-tool-demo__upload-desc text-sm text-muted">
-        通过 PicGo HTTP API 上传至 GitHub 仓库 picgo_moonhome
+        支持 {{ IMAGE_FORMAT_HINT }}，单张不超过 100MB
       </span>
     </label>
 

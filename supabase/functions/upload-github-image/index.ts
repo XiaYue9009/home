@@ -7,6 +7,41 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 const DEFAULT_REPO = 'XiaYue9009/picgo_moonhome';
 const DEFAULT_BRANCH = 'main';
 const DEFAULT_PATH = 'img/';
+const MAX_IMAGE_BYTES = 100 * 1024 * 1024;
+const ALLOWED_EXTENSIONS = [
+  'png',
+  'jpg',
+  'jpeg',
+  'gif',
+  'webp',
+  'svg',
+  'bmp',
+  'ico',
+  'avif',
+  'heic',
+  'heif',
+  'tif',
+  'tiff',
+  'apng',
+];
+const ALLOWED_MIME_TYPES = [
+  'image/png',
+  'image/jpeg',
+  'image/jpg',
+  'image/gif',
+  'image/webp',
+  'image/svg+xml',
+  'image/bmp',
+  'image/x-ms-bmp',
+  'image/x-icon',
+  'image/vnd.microsoft.icon',
+  'image/avif',
+  'image/heic',
+  'image/heif',
+  'image/tiff',
+  'image/tif',
+  'image/apng',
+];
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -45,9 +80,41 @@ function buildFilePath(basePath: string, fileName: string) {
 
 function buildUniqueFileName(originalName = 'image.png') {
   const ext = originalName.split('.').pop()?.toLowerCase() || 'png';
-  const safeExt = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(ext) ? ext : 'png';
+  const safeExt = ALLOWED_EXTENSIONS.includes(ext) ? ext : 'png';
   const id = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
   return `${id}.${safeExt}`;
+}
+
+function getExtension(fileName: string) {
+  const idx = fileName.lastIndexOf('.');
+  if (idx < 0) return '';
+  return fileName.slice(idx + 1).toLowerCase();
+}
+
+function assertValidImageUpload({
+  fileName,
+  contentType,
+  contentBase64,
+}: {
+  fileName: string;
+  contentType: string;
+  contentBase64: string;
+}) {
+  const mime = (contentType || '').toLowerCase();
+  const ext = getExtension(fileName);
+  const mimeOk =
+    Boolean(mime) && (mime.startsWith('image/') || ALLOWED_MIME_TYPES.includes(mime));
+  const extOk = Boolean(ext) && ALLOWED_EXTENSIONS.includes(ext);
+
+  if (!mimeOk && !extOk) {
+    throw new Error(`仅支持图片格式：${ALLOWED_EXTENSIONS.join(' / ')}`);
+  }
+
+  // base64 长度约为原文件的 4/3
+  const approxBytes = Math.floor((contentBase64.length * 3) / 4);
+  if (approxBytes > MAX_IMAGE_BYTES) {
+    throw new Error('图片大小不能超过 100MB');
+  }
 }
 
 function assertUploadSecret(req: Request) {
@@ -161,9 +228,23 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const content = String(body?.content || '').trim();
     const originalName = String(body?.fileName || 'image.png').trim();
+    const contentType = String(body?.contentType || '').trim();
 
     if (!content) {
       return jsonResponse({ success: false, message: '缺少图片内容' }, 400);
+    }
+
+    try {
+      assertValidImageUpload({
+        fileName: originalName,
+        contentType,
+        contentBase64: content,
+      });
+    } catch (validationError) {
+      return jsonResponse(
+        { success: false, message: validationError?.message || '图片校验失败' },
+        400,
+      );
     }
 
     const fileName = buildUniqueFileName(originalName);

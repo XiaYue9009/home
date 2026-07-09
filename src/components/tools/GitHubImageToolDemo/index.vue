@@ -1,6 +1,11 @@
 <script setup>
 import { ElMessage } from 'element-plus';
 import {
+  assertValidImageFile,
+  IMAGE_ACCEPT_ATTR,
+  IMAGE_FORMAT_HINT,
+} from '@/lib/editor/image-upload.js';
+import {
   checkGitHubImageBedAvailable,
   getGitHubImageDefaults,
   getGitHubImageRepo,
@@ -71,19 +76,13 @@ async function handleUpload(options) {
 }
 
 function beforeUpload(file) {
-  const isImage = file.type.startsWith('image/');
-  if (!isImage) {
-    ElMessage.warning('只能上传图片文件');
+  try {
+    assertValidImageFile(file);
+    return true;
+  } catch (err) {
+    ElMessage.warning(err?.message || '图片校验失败');
     return false;
   }
-
-  const maxMb = 4;
-  if (file.size / 1024 / 1024 > maxMb) {
-    ElMessage.warning(`图片大小不能超过 ${maxMb}MB（GitHub Contents API 限制）`);
-    return false;
-  }
-
-  return true;
 }
 
 async function copyText(text, label) {
@@ -124,7 +123,7 @@ onMounted(refreshStatus);
     <el-upload
       class="github-image-tool-demo__upload"
       drag
-      accept="image/*"
+      :accept="IMAGE_ACCEPT_ATTR"
       :show-file-list="false"
       :disabled="uploadDisabled"
       :before-upload="beforeUpload"
@@ -136,7 +135,7 @@ onMounted(refreshStatus);
       </div>
       <template #tip>
         <div class="el-upload__tip text-sm text-muted">
-          支持 png / jpg / gif / webp / svg，单张不超过 4MB
+          支持 {{ IMAGE_FORMAT_HINT }}，单张不超过 100MB
         </div>
       </template>
     </el-upload>

@@ -9,6 +9,7 @@ import {
   shouldBlockHeadingLevelChange,
 } from '@/lib/editor/heading-lock.js';
 import {
+  IMAGE_ACCEPT_ATTR,
   insertImageHtml,
   insertImageMarkdown,
   isImageUploadEnabled,
@@ -344,7 +345,7 @@ onBeforeUnmount(() => {
       ref="imageInputRef"
       class="markdown-editor__file-input"
       type="file"
-      accept="image/*"
+      :accept="IMAGE_ACCEPT_ATTR"
       @change="onImageInputChange"
     />
 

@@ -22,7 +22,7 @@ export const MARKDOWN_EDITOR_TOOL = {
   features: [
     '可视化 / Markdown 双模式，Ctrl + / 一键切换',
     'Typora 风格快捷键：加粗、标题、列表、引用等',
-    '图片粘贴或上传：优先 GitHub 图床（jsDelivr CDN），Supabase 兜底',
+    '图片粘贴或上传：支持常见图片格式，单张 100MB 以内；优先 GitHub 图床，Supabase 兜底',
     '内容双向同步：HTML ↔ Markdown 实时转换',
     '首行标题锁定（业务场景下防止误删标题）',
   ],
@@ -44,7 +44,7 @@ export const GITHUB_IMAGE_TOOL = {
   accent: '#22c55e',
   demoKey: 'github-image',
   features: [
-    'el-upload 拖拽/点击上传，上传成功展示图片地址与预览',
+    'el-upload 拖拽/点击上传，支持常见图片格式，单张不超过 100MB',
     '一键复制图片地址或 Markdown 链接，便于插入文章',
     '通过 GitHub Contents API 写入 picgo_moonhome 资源仓库',
     '默认 jsDelivr CDN 外链，适合 Markdown / README 引用',
