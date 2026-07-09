@@ -26,8 +26,6 @@ export function buildPublicUrl(path, { repo, branch } = getGitHubImageDefaults()
 }
 
 export function getGitHubImageApiBase() {
-  if (import.meta.env.DEV) return '/api/github-image';
-
   const custom = import.meta.env.PUBLIC_GITHUB_IMAGE_API_BASE?.trim();
   if (custom) return custom.replace(/\/+$/, '');
 
@@ -40,8 +38,9 @@ export function getGitHubImageApiBase() {
 }
 
 export function isGitHubImageBedConfigured() {
-  if (import.meta.env.DEV) return true;
-  return Boolean(getGitHubImageApiBase());
+  if (!getGitHubImageApiBase()) return false;
+  if (import.meta.env.PUBLIC_GITHUB_IMAGE_API_BASE?.trim()) return true;
+  return Boolean(import.meta.env.PUBLIC_SUPABASE_ANON_KEY?.trim());
 }
 
 export function resetGitHubImageAvailabilityCache() {
@@ -54,7 +53,7 @@ function buildHeaders(extra = {}) {
   if (secret) headers['X-Upload-Secret'] = secret;
 
   const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY?.trim();
-  if (supabaseKey && !import.meta.env.DEV) {
+  if (supabaseKey) {
     headers.Authorization = `Bearer ${supabaseKey}`;
     headers.apikey = supabaseKey;
   }
@@ -99,7 +98,7 @@ export async function uploadFileToGitHubRepo(file) {
 
   const apiBase = getGitHubImageApiBase();
   if (!apiBase) {
-    throw new Error('GitHub 图床未配置：请设置 Supabase 或 PUBLIC_GITHUB_IMAGE_API_BASE');
+    throw new Error('GitHub 图床未配置：请设置 PUBLIC_SUPABASE_URL 与 PUBLIC_SUPABASE_ANON_KEY');
   }
 
   const content = await readFileAsBase64(file);

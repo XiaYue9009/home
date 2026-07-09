@@ -50,7 +50,7 @@ export async function uploadEditorImage(file) {
     return uploadViaSupabase(file);
   }
 
-  throw new Error('图床未配置：请在 .env 设置 GITHUB_TOKEN，或配置 Supabase');
+  throw new Error('图床未配置：请配置 Supabase，并部署 upload-github-image Edge Function');
 }
 
 export function insertImageHtml(url, alt = '图片') {

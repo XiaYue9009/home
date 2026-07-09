@@ -10,15 +10,21 @@
 
 ## Edge Function：GitHub 图床
 
+本地开发与线上部署**共用** `upload-github-image`，前端统一请求：
+
+`{PUBLIC_SUPABASE_URL}/functions/v1/upload-github-image`
+
 ```bash
 supabase secrets set GITHUB_TOKEN=ghp_xxx
 # 可选
 supabase secrets set GITHUB_REPO=XiaYue9009/picgo_moonhome
+supabase secrets set GITHUB_BRANCH=main
+supabase secrets set GITHUB_PATH=img/
 supabase secrets set GITHUB_UPLOAD_SECRET=your-secret
 supabase functions deploy upload-github-image
 ```
 
-前端需配置 `PUBLIC_SUPABASE_URL`、`PUBLIC_SUPABASE_ANON_KEY`；若设置了 `GITHUB_UPLOAD_SECRET`，同步设置 `PUBLIC_GITHUB_UPLOAD_SECRET`。
+前端（`.env` 与 GitHub Actions Secrets）配置 `PUBLIC_SUPABASE_URL`、`PUBLIC_SUPABASE_ANON_KEY`；若设置了 `GITHUB_UPLOAD_SECRET`，同步设置 `PUBLIC_GITHUB_UPLOAD_SECRET`。
 
 ## 常用命令
 

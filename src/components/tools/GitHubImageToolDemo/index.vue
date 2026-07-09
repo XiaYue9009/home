@@ -86,10 +86,18 @@ function beforeUpload(file) {
   return true;
 }
 
-async function copyMarkdown() {
-  if (!lastMarkdown.value) return;
-  await navigator.clipboard.writeText(lastMarkdown.value);
-  ElMessage.success('已复制 Markdown');
+async function copyText(text, label) {
+  if (!text) return;
+  await navigator.clipboard.writeText(text);
+  ElMessage.success(`已复制${label}`);
+}
+
+function copyUrl() {
+  return copyText(lastUrl.value, '图片地址');
+}
+
+function copyMarkdown() {
+  return copyText(lastMarkdown.value, 'Markdown');
 }
 
 onMounted(refreshStatus);
@@ -106,11 +114,11 @@ onMounted(refreshStatus);
     </div>
 
     <p class="github-image-tool-demo__hint text-sm text-subtle">
-      通过 Element Plus 上传组件，将图片写入 GitHub 仓库
+      上传后图片写入
       <a :href="props.links.repo" target="_blank" rel="noopener noreferrer" class="text-link">
         {{ defaults.repo }}
       </a>
-      ，外链默认走 jsDelivr CDN。
+      ，通过 jsDelivr CDN 分发。本地与线上共用 Supabase Edge Function 上传接口。
     </p>
 
     <el-upload
@@ -136,19 +144,24 @@ onMounted(refreshStatus);
     <div v-if="lastUrl" class="github-image-tool-demo__result glass-card">
       <img :src="lastUrl" alt="上传预览" class="github-image-tool-demo__preview" />
       <div class="github-image-tool-demo__result-body">
-        <p class="github-image-tool-demo__result-label text-sm text-subtle">Markdown 链接</p>
-        <code class="github-image-tool-demo__code">{{ lastMarkdown }}</code>
-        <button type="button" class="btn-ghost text-sm" @click="copyMarkdown">
-          复制 Markdown
-        </button>
+        <p class="github-image-tool-demo__result-label text-sm text-subtle">图片地址</p>
+        <code class="github-image-tool-demo__code">{{ lastUrl }}</code>
+        <div class="github-image-tool-demo__actions">
+          <button type="button" class="btn-ghost text-sm" @click="copyUrl">
+            复制图片地址
+          </button>
+          <button type="button" class="btn-ghost text-sm" @click="copyMarkdown">
+            复制 Markdown
+          </button>
+        </div>
       </div>
     </div>
 
     <ol class="github-image-tool-demo__steps text-sm text-muted">
-      <li>本地开发：在 <code>.env</code> 配置 <code>GITHUB_TOKEN</code>（需 <code>repo</code> 权限）</li>
-      <li>线上部署：部署 Supabase Edge Function <code>upload-github-image</code> 并设置同名 Secret</li>
-      <li>可选：设置 <code>PUBLIC_GITHUB_UPLOAD_SECRET</code> 防止接口被滥用</li>
-      <li>Markdown 编辑器粘贴图片时，会优先走同一套 GitHub 图床</li>
+      <li>Supabase 部署 <code>upload-github-image</code>，Secret 配置 <code>GITHUB_TOKEN</code></li>
+      <li><code>.env</code> 配置 <code>PUBLIC_SUPABASE_URL</code>、<code>PUBLIC_SUPABASE_ANON_KEY</code></li>
+      <li>若启用上传密钥，<code>GITHUB_UPLOAD_SECRET</code> 与 <code>PUBLIC_GITHUB_UPLOAD_SECRET</code> 须保持一致</li>
+      <li>上传成功后可复制图片地址或 Markdown，编辑器粘贴图片走同一接口</li>
     </ol>
   </div>
 </template>
@@ -254,6 +267,12 @@ onMounted(refreshStatus);
     flex-direction: column;
     gap: 0.5rem;
     min-width: 0;
+  }
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
   }
 
   &__result-label {
