@@ -42,6 +42,7 @@ jobs:
           PUBLIC_GISCUS_CATEGORY_ID: ${{ secrets.PUBLIC_GISCUS_CATEGORY_ID }}
           PUBLIC_SUPABASE_URL: ${{ secrets.PUBLIC_SUPABASE_URL }}
           PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.PUBLIC_SUPABASE_ANON_KEY }}
+          PUBLIC_GITHUB_UPLOAD_SECRET: ${{ secrets.PUBLIC_GITHUB_UPLOAD_SECRET }}
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
