@@ -14,6 +14,8 @@ import { useLolStore } from '@/stores/lol.js';
 import UpcomingCardGrid from '@/components/upcoming/UpcomingCardGrid/index.vue';
 import SystemToolGrid from '@/components/tools/SystemToolGrid/index.vue';
 import StackLinkGrid from '@/components/stack/StackLinkGrid/index.vue';
+import PostgradDashboard from '@/components/postgrad/PostgradDashboard/index.vue';
+import { postgradApplyFitActive } from '@/lib/postgrad/apply-fit.js';
 import {
   MOTION_CATEGORY,
   MOTION_STAGGER,
@@ -105,10 +107,13 @@ const filteredPlaceOptions = computed(() => {
 </script>
 
 <template>
-  <div class="page-shell page-shell--category">
+  <div
+    class="page-shell page-shell--category"
+    :class="{ 'page-shell--postgrad-fit': category === 'postgrad' && postgradApplyFitActive }"
+  >
     <header
-      class="mb-10"
-      :class="{ 'category-page-header': category === 'lol' || category === 'travel' || category === 'upcoming' || category === 'tools' || category === 'stack' }"
+      class="category-page-header"
+      :class="category === 'postgrad' && postgradApplyFitActive ? 'category-page-header--postgrad' : 'mb-3'"
     >
       <div v-if="category === 'lol'" class="category-page-header__row">
         <MotionEnter :animation="MOTION_CATEGORY.icon.animation">
@@ -116,7 +121,7 @@ const filteredPlaceOptions = computed(() => {
         </MotionEnter>
         <MotionEnter
           tag="h1"
-          class="font-display text-3xl font-bold"
+          class="font-display text-2xl font-bold"
           :class="cat.color"
           :animation="MOTION_CATEGORY.title.animation"
           :delay="MOTION_CATEGORY.title.delay"
@@ -125,7 +130,7 @@ const filteredPlaceOptions = computed(() => {
         </MotionEnter>
         <MotionEnter
           tag="p"
-          class="category-page-header__desc text-muted"
+          class="category-page-header__desc category-page-header__desc--compact text-muted"
           :animation="MOTION_CATEGORY.desc.animation"
           :delay="MOTION_CATEGORY.desc.delay"
           :speed="MOTION_CATEGORY.desc.speed"
@@ -147,7 +152,7 @@ const filteredPlaceOptions = computed(() => {
         </MotionEnter>
         <MotionEnter
           tag="h1"
-          class="font-display text-3xl font-bold"
+          class="font-display text-2xl font-bold"
           :class="cat.color"
           :animation="MOTION_CATEGORY.title.animation"
           :delay="MOTION_CATEGORY.title.delay"
@@ -156,7 +161,7 @@ const filteredPlaceOptions = computed(() => {
         </MotionEnter>
         <MotionEnter
           tag="p"
-          class="category-page-header__desc text-muted"
+          class="category-page-header__desc category-page-header__desc--compact text-muted"
           :animation="MOTION_CATEGORY.desc.animation"
           :delay="MOTION_CATEGORY.desc.delay"
           :speed="MOTION_CATEGORY.desc.speed"
@@ -184,7 +189,7 @@ const filteredPlaceOptions = computed(() => {
         </MotionEnter>
         <MotionEnter
           tag="h1"
-          class="font-display text-3xl font-bold"
+          class="font-display text-2xl font-bold"
           :class="cat.color"
           :animation="MOTION_CATEGORY.title.animation"
           :delay="MOTION_CATEGORY.title.delay"
@@ -193,7 +198,7 @@ const filteredPlaceOptions = computed(() => {
         </MotionEnter>
         <MotionEnter
           tag="p"
-          class="category-page-header__desc text-muted"
+          class="category-page-header__desc category-page-header__desc--compact text-muted"
           :animation="MOTION_CATEGORY.desc.animation"
           :delay="MOTION_CATEGORY.desc.delay"
           :speed="MOTION_CATEGORY.desc.speed"
@@ -207,7 +212,7 @@ const filteredPlaceOptions = computed(() => {
         </MotionEnter>
         <MotionEnter
           tag="h1"
-          class="font-display text-3xl font-bold"
+          class="font-display text-2xl font-bold"
           :class="cat.color"
           :animation="MOTION_CATEGORY.title.animation"
           :delay="MOTION_CATEGORY.title.delay"
@@ -216,7 +221,7 @@ const filteredPlaceOptions = computed(() => {
         </MotionEnter>
         <MotionEnter
           tag="p"
-          class="category-page-header__desc text-muted"
+          class="category-page-header__desc category-page-header__desc--compact text-muted"
           :animation="MOTION_CATEGORY.desc.animation"
           :delay="MOTION_CATEGORY.desc.delay"
           :speed="MOTION_CATEGORY.desc.speed"
@@ -230,7 +235,7 @@ const filteredPlaceOptions = computed(() => {
         </MotionEnter>
         <MotionEnter
           tag="h1"
-          class="font-display text-3xl font-bold"
+          class="font-display text-2xl font-bold"
           :class="cat.color"
           :animation="MOTION_CATEGORY.title.animation"
           :delay="MOTION_CATEGORY.title.delay"
@@ -239,7 +244,7 @@ const filteredPlaceOptions = computed(() => {
         </MotionEnter>
         <MotionEnter
           tag="p"
-          class="category-page-header__desc text-muted"
+          class="category-page-header__desc category-page-header__desc--compact text-muted"
           :animation="MOTION_CATEGORY.desc.animation"
           :delay="MOTION_CATEGORY.desc.delay"
           :speed="MOTION_CATEGORY.desc.speed"
@@ -247,13 +252,13 @@ const filteredPlaceOptions = computed(() => {
           项目技术栈选用
         </MotionEnter>
       </div>
-      <template v-else>
+      <div v-else-if="category === 'postgrad'" class="category-page-header__row">
         <MotionEnter :animation="MOTION_CATEGORY.icon.animation">
           <CategoryIcon :category="category" size="lg" />
         </MotionEnter>
         <MotionEnter
           tag="h1"
-          class="mt-3 font-display text-3xl font-bold"
+          class="font-display text-2xl font-bold"
           :class="cat.color"
           :animation="MOTION_CATEGORY.title.animation"
           :delay="MOTION_CATEGORY.title.delay"
@@ -262,14 +267,37 @@ const filteredPlaceOptions = computed(() => {
         </MotionEnter>
         <MotionEnter
           tag="p"
-          class="mt-2 text-muted"
+          class="category-page-header__desc category-page-header__desc--compact text-muted"
+          :animation="MOTION_CATEGORY.desc.animation"
+          :delay="MOTION_CATEGORY.desc.delay"
+          :speed="MOTION_CATEGORY.desc.speed"
+        >
+          青岛科技大学 · 计算机科学与技术 · 今年体验参考，明年全力上岸
+        </MotionEnter>
+      </div>
+      <div v-else class="category-page-header__row">
+        <MotionEnter :animation="MOTION_CATEGORY.icon.animation">
+          <CategoryIcon :category="category" size="lg" />
+        </MotionEnter>
+        <MotionEnter
+          tag="h1"
+          class="font-display text-2xl font-bold"
+          :class="cat.color"
+          :animation="MOTION_CATEGORY.title.animation"
+          :delay="MOTION_CATEGORY.title.delay"
+        >
+          {{ cat.label }}
+        </MotionEnter>
+        <MotionEnter
+          tag="p"
+          class="category-page-header__desc category-page-header__desc--compact text-muted"
           :animation="MOTION_CATEGORY.desc.animation"
           :delay="MOTION_CATEGORY.desc.delay"
           :speed="MOTION_CATEGORY.desc.speed"
         >
           共 {{ categoryPosts.length }} 篇文章
         </MotionEnter>
-      </template>
+      </div>
     </header>
 
     <section v-if="category === 'upcoming'" class="mb-14">
@@ -282,6 +310,14 @@ const filteredPlaceOptions = computed(() => {
 
     <section v-if="category === 'stack'" class="mb-14">
       <StackLinkGrid />
+    </section>
+
+    <section
+      v-if="category === 'postgrad'"
+      class="postgrad-page-section"
+      :class="{ 'postgrad-page-section--fit': postgradApplyFitActive }"
+    >
+      <PostgradDashboard />
     </section>
 
     <section v-if="category === 'travel'" class="mb-14">
@@ -510,7 +546,7 @@ const filteredPlaceOptions = computed(() => {
       />
     </section>
 
-    <section v-if="categoryPosts.length > 0">
+    <section v-if="categoryPosts.length > 0 && category !== 'postgrad'">
       <ScrollReveal
         tag="h2"
         class="mb-6 font-display text-xl font-semibold text-heading"
@@ -532,7 +568,7 @@ const filteredPlaceOptions = computed(() => {
     </section>
 
     <MotionEnter
-      v-else-if="category !== 'lol' && category !== 'travel' && category !== 'upcoming' && category !== 'tools' && category !== 'stack'"
+      v-else-if="category !== 'lol' && category !== 'travel' && category !== 'upcoming' && category !== 'tools' && category !== 'stack' && category !== 'postgrad'"
       tag="p"
       class="text-subtle"
       animation="fadeIn"
@@ -616,6 +652,42 @@ const filteredPlaceOptions = computed(() => {
     background: rgb(0 0 0 / 20%);
     padding: 0.375rem 0.625rem;
     color: var(--color-heading, #f8fafc);
+  }
+}
+
+.category-page-header {
+  gap: 0.5rem 0.85rem;
+}
+
+.category-page-header__desc--compact {
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.page-shell--postgrad-fit {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  padding-top: 0.85rem;
+  padding-bottom: 0.35rem;
+}
+
+.category-page-header--postgrad {
+  flex-shrink: 0;
+  margin-bottom: 0.55rem;
+}
+
+.postgrad-page-section {
+  margin-bottom: 0;
+
+  &--fit {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
   }
 }
 </style>

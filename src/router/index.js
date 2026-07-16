@@ -46,7 +46,7 @@ const router = createRouter({
       props: true,
     },
     {
-      path: '/:category(life|tech|travel|lol|upcoming|tools|stack)',
+      path: '/:category(life|tech|travel|lol|upcoming|tools|stack|postgrad)',
       name: 'category',
       component: CategoryPage,
       props: true,

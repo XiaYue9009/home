@@ -3,9 +3,12 @@ import AppHeader from './components/layout/AppHeader/index.vue';
 import AppFooter from './components/layout/AppFooter/index.vue';
 import PageEnter from './components/motion/PageEnter/index.vue';
 import { initNatureFall } from './lib/site/nature-fall.js';
+import { postgradApplyFitActive } from './lib/postgrad/apply-fit.js';
 
 const route = useRoute();
-const fitViewport = computed(() => route.meta?.fitViewport === true);
+const fitViewport = computed(
+  () => route.meta?.fitViewport === true || postgradApplyFitActive.value,
+);
 const showFooter = computed(() => !fitViewport.value);
 
 watch(
@@ -41,11 +44,11 @@ onMounted(() => {
       <RouterView v-slot="{ Component, route }">
         <PageEnter
           :key="route.fullPath"
-          :class="route.meta?.fitViewport ? 'page-fit min-h-0 overflow-hidden' : ''"
+          :class="fitViewport ? 'page-fit min-h-0 overflow-hidden' : ''"
         >
           <component
             :is="Component"
-            :class="route.meta?.fitViewport ? 'page-fit flex min-h-0 flex-1 flex-col overflow-hidden' : ''"
+            :class="fitViewport ? 'page-fit flex min-h-0 flex-1 flex-col overflow-hidden' : ''"
           />
         </PageEnter>
       </RouterView>

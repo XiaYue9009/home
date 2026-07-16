@@ -17,6 +17,7 @@ import {
 } from '@/lib/motion/presets.js';
 import { triggerAnimate } from '@/lib/motion/trigger.js';
 import { usePostsStore } from '@/stores/posts.js';
+import PostgradHomeSection from '@/components/postgrad/PostgradHomeSection/index.vue';
 
 const postsStore = usePostsStore();
 const latestPosts = computed(() => postsStore.latest(6));
@@ -113,6 +114,8 @@ function pulseCta(event) {
       </ScrollReveal>
     </div>
   </section>
+
+  <PostgradHomeSection />
 
   <section class="page-shell">
     <ScrollReveal :animation="MOTION_HOME.demo.animation">
@@ -217,6 +220,10 @@ function pulseCta(event) {
 
   &[data-category='stack'] {
     --card-accent: #2dd4bf;
+  }
+
+  &[data-category='postgrad'] {
+    --card-accent: #c084fc;
   }
 
   &__main {

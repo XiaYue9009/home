@@ -48,6 +48,12 @@ export const CATEGORIES = {
     color: 'text-teal-400',
     description: '项目技术栈',
   },
+  postgrad: {
+    label: '考研',
+    emoji: '🎓',
+    color: 'text-purple-400',
+    description: '青科大计算机考研 · 资料与备考计划',
+  },
 };
 
 export function formatDate(date) {
