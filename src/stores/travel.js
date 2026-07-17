@@ -29,7 +29,7 @@ export const useTravelStore = defineStore('travel', {
     },
   }),
   getters: {
-    displayAccount: (state) => state.account || fallbackAccount,
+    displayAccount: (state) => state.account || fallbackAccount || {},
     collectsFolders: () => getTravelFolderNames(),
     folderGroups(state) {
       if (state.groups.length) return state.groups;
@@ -108,7 +108,7 @@ export const useTravelStore = defineStore('travel', {
     },
 
     applyFallback(message) {
-      this.account = fallbackAccount;
+      this.account = fallbackAccount || null;
       this.groups = fallbackGroups.length
         ? fallbackGroups
         : groupVideosByFolderNames(fallbackVideos, getTravelFolderNames());

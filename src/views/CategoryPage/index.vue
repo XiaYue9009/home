@@ -146,17 +146,7 @@ const filteredPlaceOptions = computed(() => {
           :delay="MOTION_CATEGORY.desc.delay"
           :speed="MOTION_CATEGORY.desc.speed"
         >
-          旅行视频 · {{ travelStore.collectsFolders.join(' / ') }} ·
-          <a
-            v-if="travelStore.displayAccount.profileUrl"
-            :href="travelStore.displayAccount.profileUrl"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="text-link"
-          >
-            {{ travelStore.displayAccount.nickname || '来源账号' }}
-          </a>
-          <span v-else>本地缓存</span>
+          旅行足迹与视频收藏，内容待补充。
         </MotionEnter>
       </div>
       <div v-else-if="category === 'upcoming'" class="category-page-header__row">
@@ -407,9 +397,7 @@ const filteredPlaceOptions = computed(() => {
       <ScrollReveal v-else :animation="MOTION_CATEGORY.empty.animation">
         <div class="glass-card p-8 text-center">
           <p class="text-muted">暂无旅行视频。</p>
-          <p class="mt-2 text-sm text-subtle">
-            已配置 Supabase 时从云端读取；未配置时使用本地静态缓存。
-          </p>
+          <p class="mt-2 text-sm text-subtle">旅行模块内容已清空，后续可在本地数据或 Supabase 中重新添加。</p>
         </div>
       </ScrollReveal>
 

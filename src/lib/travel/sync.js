@@ -1,4 +1,4 @@
-/** 旅行视频加载：Supabase 云端读取，未配置时由 store 回退本地静态数据 */
+/** 旅行视频加载：当前内容已清空，仅使用本地静态数据 */
 import {
   fetchCloudTravelSyncMeta,
   fetchCloudTravelVideos,
@@ -24,9 +24,5 @@ export async function loadTravelFromSupabase(filters = {}) {
 }
 
 export async function resolveTravelLoad() {
-  if (!isTravelVideosCloudEnabled()) {
-    return null;
-  }
-
-  return loadTravelFromSupabase();
+  return null;
 }
