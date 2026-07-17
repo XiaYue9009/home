@@ -13,7 +13,6 @@
     "build": "vite build",
     "preview": "vite preview",
     "sync:lol-mid": "node scripts/sync-lol-mid-heroes.mjs",
-    "sync:douyin-collection": "node scripts/sync-douyin-collection.mjs",
     "db:link": "supabase link --project-ref caiwzskepfycnoyplftf",
     "db:push": "node scripts/supabase-db-push.mjs",
     "prebuild": "pnpm sync:lol-mid",

@@ -1,4 +1,4 @@
-/** 抖音账号信息，由 scripts/sync-douyin-collection.mjs 同步写入 */
+/** 旅行视频来源账号（本地静态缓存） */
 export default {
   "nickname": "夏越一定瘦！",
   "uniqueId": "1330141115",

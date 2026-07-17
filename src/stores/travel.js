@@ -2,13 +2,13 @@ import { defineStore } from 'pinia';
 import fallbackAccount from '@/data/travel/account.js';
 import fallbackGroups from '@/data/travel/groups.js';
 import fallbackVideos from '@/data/travel/videos.js';
-import { DEFAULT_MAX, getTargetCollectsFolderNames } from '@/lib/travel/douyin-collection.js';
 import {
   buildTravelGeoView,
   filterVideosByGeo,
+  getTravelFolderNames,
   groupVideosByFolderNames,
 } from '@/lib/travel/present.js';
-import { isScheduledSyncDay, resolveTravelLoad } from '@/lib/travel/sync.js';
+import { resolveTravelLoad } from '@/lib/travel/sync.js';
 
 export const useTravelStore = defineStore('travel', {
   state: () => ({
@@ -16,9 +16,7 @@ export const useTravelStore = defineStore('travel', {
     groups: [],
     videos: [],
     meta: null,
-    syncInfo: null,
     loading: false,
-    syncing: false,
     loaded: false,
     error: null,
     source: null,
@@ -32,13 +30,13 @@ export const useTravelStore = defineStore('travel', {
   }),
   getters: {
     displayAccount: (state) => state.account || fallbackAccount,
-    collectsFolders: () => getTargetCollectsFolderNames(),
+    collectsFolders: () => getTravelFolderNames(),
     folderGroups(state) {
       if (state.groups.length) return state.groups;
       if (fallbackGroups.length) return fallbackGroups;
       const videos = this.allVideos;
-      if (videos.length) return groupVideosByFolderNames(videos, getTargetCollectsFolderNames());
-      return groupVideosByFolderNames([], getTargetCollectsFolderNames());
+      if (videos.length) return groupVideosByFolderNames(videos, getTravelFolderNames());
+      return groupVideosByFolderNames([], getTravelFolderNames());
     },
     allVideos(state) {
       if (state.videos.length) return state.videos;
@@ -68,7 +66,7 @@ export const useTravelStore = defineStore('travel', {
           ),
         }));
       }
-      return groupVideosByFolderNames(this.filteredVideos, getTargetCollectsFolderNames());
+      return groupVideosByFolderNames(this.filteredVideos, getTravelFolderNames());
     },
     hasDisplayContent() {
       return this.displayGroups.some((group) =>
@@ -78,12 +76,6 @@ export const useTravelStore = defineStore('travel', {
     geoOptions() {
       return this.geoView.geoOptions;
     },
-    lastSyncLabel(state) {
-      const at = state.meta?.lastDouyinSyncAt;
-      if (!at) return '';
-      return new Date(at).toLocaleString('zh-CN');
-    },
-    isAutoSyncDay: () => isScheduledSyncDay(),
   },
   actions: {
     setViewMode(mode) {
@@ -109,9 +101,8 @@ export const useTravelStore = defineStore('travel', {
     applyPayload(payload) {
       this.account = payload.account || null;
       this.videos = payload.videos || [];
-      this.groups = groupVideosByFolderNames(this.videos, getTargetCollectsFolderNames());
+      this.groups = groupVideosByFolderNames(this.videos, getTravelFolderNames());
       this.meta = payload.meta || null;
-      this.syncInfo = payload.sync || null;
       this.source = payload.source || null;
       this.error = payload.error || null;
     },
@@ -120,62 +111,33 @@ export const useTravelStore = defineStore('travel', {
       this.account = fallbackAccount;
       this.groups = fallbackGroups.length
         ? fallbackGroups
-        : groupVideosByFolderNames(fallbackVideos, getTargetCollectsFolderNames());
+        : groupVideosByFolderNames(fallbackVideos, getTravelFolderNames());
       this.videos = fallbackVideos;
       this.meta = null;
-      this.syncInfo = null;
       this.source = fallbackVideos.length || fallbackGroups.length ? 'cache' : null;
       this.error = message;
     },
 
     async load(force = false) {
-      if (this.loading || this.syncing) return;
+      if (this.loading) return;
       if (this.loaded && !force) return;
 
       this.loading = true;
       this.error = null;
 
-      const maxVideos = Number(import.meta.env.PUBLIC_DOUYIN_MAX_VIDEOS) || DEFAULT_MAX;
-      const folderNames = getTargetCollectsFolderNames();
-
       try {
-        const payload = await resolveTravelLoad({
-          manual: false,
-          maxVideos,
-          folderNames,
-        });
-        this.applyPayload(payload);
+        const payload = await resolveTravelLoad();
+        if (payload) {
+          this.applyPayload(payload);
+        } else {
+          this.applyFallback(null);
+        }
         this.loaded = true;
       } catch (err) {
-        this.applyFallback(err?.message || '加载收藏失败');
+        this.applyFallback(err?.message || '加载失败');
         this.loaded = true;
       } finally {
         this.loading = false;
-      }
-    },
-
-    async syncFromDouyin() {
-      if (this.loading || this.syncing) return;
-
-      this.syncing = true;
-      this.error = null;
-
-      const maxVideos = Number(import.meta.env.PUBLIC_DOUYIN_MAX_VIDEOS) || DEFAULT_MAX;
-      const folderNames = getTargetCollectsFolderNames();
-
-      try {
-        const payload = await resolveTravelLoad({
-          manual: true,
-          maxVideos,
-          folderNames,
-        });
-        this.applyPayload(payload);
-        this.loaded = true;
-      } catch (err) {
-        this.error = err?.message || '同步失败';
-        throw err;
-      } finally {
-        this.syncing = false;
       }
     },
   },

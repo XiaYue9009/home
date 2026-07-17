@@ -1,6 +1,12 @@
 /** 旅行视频展示分组与筛选 */
 import { collectGeoOptions, groupVideosByGeo } from '@/lib/travel/geo-extract.js';
 
+export const DEFAULT_TRAVEL_FOLDERS = ['旅游', '美食'];
+
+export function getTravelFolderNames() {
+  return [...DEFAULT_TRAVEL_FOLDERS];
+}
+
 export function groupVideosByFolderNames(videos, folderNames = []) {
   return folderNames.map((name) => {
     const matched = (videos || []).filter(
@@ -55,19 +61,3 @@ export function buildTravelGeoView(videos, filters = {}) {
   };
 }
 
-export function flattenDouyinGroups(groups = []) {
-  const videos = [];
-  for (const group of groups) {
-    for (const folder of group.folders || []) {
-      for (const video of folder.videos || []) {
-        videos.push({
-          ...video,
-          folderId: video.folderId || folder.id,
-          folderName: video.folderName || folder.name,
-          category: video.category || group.keyword || folder.name,
-        });
-      }
-    }
-  }
-  return videos;
-}

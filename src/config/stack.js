@@ -16,7 +16,7 @@ export const STACK_LINKS = [
       '后续优化卡片的云端读写（RPC / Postgres）',
       'LOL 常玩英雄列表的云端同步',
       'Markdown 图片兜底上传到 Storage（upcoming-images）',
-      'Edge Function：GitHub 图床上传、抖音收藏拉取',
+      'Edge Function：GitHub 图床上传',
     ],
     setup: [
       '在项目根目录 .env 配置 PUBLIC_SUPABASE_URL 与 PUBLIC_SUPABASE_ANON_KEY',
@@ -127,11 +127,11 @@ export const STACK_LINKS = [
     group: 'video',
     role: '视频托管候选（全球 CDN）',
     summary:
-      '旅行页目前以外链抖音收藏为主，未自建视频托管。Cloudflare Stream 适合以后把站内自制/转码视频放到全球 CDN 上播放。',
+      '旅行页以外链视频收藏为主，未自建视频托管。Cloudflare Stream 适合以后把站内自制/转码视频放到全球 CDN 上播放。',
     usages: [
       '可作为旅行或其它栏目的自有视频托管方案',
       '提供转码、自适应码率与嵌入播放器',
-      '与现有「外链抖音」模式互补：外链灵感 vs 自有成片',
+      '与现有「外链视频」模式互补：外链灵感 vs 自有成片',
     ],
     setup: [
       '在 Cloudflare Dashboard 开通 Stream',
@@ -180,7 +180,7 @@ export const STACK_LINKS = [
     group: 'video',
     role: '视频托管候选（性价比）',
     summary:
-      'Bunny Stream 以价格和易用性见长，适合个人站自建视频库。当前旅行内容仍走抖音收藏同步，Bunny 作为低成本备选收录。',
+      'Bunny Stream 以价格和易用性见长，适合个人站自建视频库。当前旅行内容仍走外链视频收藏，Bunny 作为低成本备选收录。',
     usages: [
       '低成本托管自制旅行/教程视频',
       '自适应码率流媒体，适合国内访问优化时对比选型',

@@ -1,4 +1,4 @@
-/** 抖音收藏视频列表，由 scripts/sync-douyin-collection.mjs 同步写入 */
+/** 旅行视频列表（本地静态缓存） */
 export default [
   {
     "id": "7650819471958904100",
