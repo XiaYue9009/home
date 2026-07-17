@@ -1,3 +1,8 @@
+import {
+  createOrderedListItemHtml,
+  ensureOrderedListItemCheckbox,
+} from '@/lib/editor/list-editing.js';
+
 function isModKey(event) {
   return event.ctrlKey || event.metaKey;
 }
@@ -14,13 +19,41 @@ function insertHtml(html) {
   document.execCommand('insertHTML', false, html);
 }
 
+function enhanceOrderedList(list) {
+  if (!list) return;
+  list.classList.add('ol-task-list');
+  [...list.children].forEach((child) => {
+    if (child.tagName === 'LI') {
+      ensureOrderedListItemCheckbox(child);
+    }
+  });
+}
+
 function insertListManually(type) {
   const selection = window.getSelection();
   if (!selection?.rangeCount) return false;
 
   const range = selection.getRangeAt(0);
-  const tag = type === 'ordered' ? 'ol' : 'ul';
-  const list = document.createElement(tag);
+  if (type === 'ordered') {
+    const list = document.createElement('ol');
+    list.className = 'ol-task-list';
+    list.innerHTML = createOrderedListItemHtml(range.toString() || '');
+    range.deleteContents();
+    range.insertNode(list);
+
+    const item = list.querySelector('li');
+    const textNode = item?.querySelector('.ol-task-text') || item;
+    if (textNode) {
+      const newRange = document.createRange();
+      newRange.selectNodeContents(textNode);
+      newRange.collapse(false);
+      selection.removeAllRanges();
+      selection.addRange(newRange);
+    }
+    return true;
+  }
+
+  const list = document.createElement('ul');
   const item = document.createElement('li');
   item.textContent = range.toString() || '列表项';
   list.appendChild(item);
@@ -38,7 +71,15 @@ function insertListManually(type) {
 
 function applyListCommand(type) {
   const command = type === 'ordered' ? 'insertOrderedList' : 'insertUnorderedList';
-  if (document.execCommand(command)) return true;
+  if (document.execCommand(command)) {
+    if (type === 'ordered') {
+      const selection = window.getSelection();
+      let node = selection?.anchorNode;
+      if (node?.nodeType === Node.TEXT_NODE) node = node.parentElement;
+      enhanceOrderedList(node?.closest('ol'));
+    }
+    return true;
+  }
   return insertListManually(type);
 }
 
@@ -57,6 +98,9 @@ export const VISUAL_SHORTCUTS = [
   { keys: 'Ctrl+T', label: '表格', icon: 'table' },
   { keys: 'Ctrl+Shift+[', label: '有序列表', icon: 'ol' },
   { keys: 'Ctrl+Shift+]', label: '无序列表', icon: 'ul' },
+  { keys: 'Tab', label: '列表下级缩进', icon: 'ol' },
+  { keys: 'Shift+Tab', label: '列表上级反缩进', icon: 'ul' },
+  { keys: 'Ctrl+Shift+Enter', label: '有序列表完成切换', icon: 'ol' },
   { keys: 'Ctrl+Shift+C', label: '字体颜色', icon: 'color' },
   { keys: 'Ctrl+Shift+I', label: '插入图片', icon: 'image' },
   { keys: 'Ctrl+/', label: '切换 Markdown', icon: 'markdown' },

@@ -1,6 +1,5 @@
 <script setup>
 import EditorShortcutIcon from '@/components/editor/EditorShortcutIcon/index.vue';
-import { renderMarkdown } from '@/lib/content/markdown.js';
 import { htmlToMarkdown, markdownToHtml } from '@/lib/editor/content-format.js';
 import {
   enforceFirstHeadingHtml,
@@ -16,6 +15,11 @@ import {
   uploadEditorImage,
 } from '@/lib/editor/image-upload.js';
 import {
+  applyVisualListKeydown,
+  enhanceVisualOrderedLists,
+  handleVisualOrderedListCheckbox,
+} from '@/lib/editor/list-editing.js';
+import {
   applyMarkdownShortcut,
   MARKDOWN_SHORTCUTS,
 } from '@/lib/editor/markdown-shortcuts.js';
@@ -26,6 +30,7 @@ import {
   VISUAL_SHORTCUTS,
 } from '@/lib/editor/visual-shortcuts.js';
 import { extractTitleFromContent } from '@/lib/upcoming/content-title.js';
+
 import { useEditStore } from '@/stores/edit.js';
 
 const props = defineProps({
@@ -51,7 +56,7 @@ let syncTimer = null;
 const editable = computed(() => !props.readonly && (props.demo || editStore.canEdit));
 const isVisualMode = computed(() => editorMode.value === 'visual');
 const isMarkdownMode = computed(() => editorMode.value === 'markdown');
-const previewHtml = computed(() => renderMarkdown(props.modelValue || ''));
+const previewHtml = computed(() => markdownToHtml(props.modelValue || ''));
 const shortcutItems = computed(() => (isVisualMode.value ? VISUAL_SHORTCUTS : MARKDOWN_SHORTCUTS));
 const fallbackTitle = computed(() => extractTitleFromContent(props.modelValue) || '未命名');
 
@@ -72,6 +77,7 @@ function syncVisualToMarkdown() {
 function applyVisualHtml() {
   if (!visualRef.value || !isVisualMode.value) return;
   visualRef.value.innerHTML = markdownToHtml(props.modelValue || '');
+  enhanceVisualOrderedLists(visualRef.value);
 
   if (props.lockFirstHeading) {
     enforceFirstHeadingHtml(visualRef.value, fallbackTitle.value);
@@ -84,6 +90,7 @@ function scheduleVisualSync() {
 }
 
 function onVisualInput() {
+  enhanceVisualOrderedLists(visualRef.value);
   scheduleVisualSync();
 }
 
@@ -144,6 +151,11 @@ function onImageInputChange(event) {
 function onVisualKeydown(event) {
   if (!editable.value || !isVisualMode.value) return;
 
+  if (applyVisualListKeydown(event, visualRef.value)) {
+    scheduleVisualSync();
+    return;
+  }
+
   if (props.lockFirstHeading) {
     if (shouldBlockHeadingLevelChange(event, visualRef.value)) {
       event.preventDefault();
@@ -161,6 +173,21 @@ function onVisualKeydown(event) {
     isFirstHeadingSelection: () =>
       props.lockFirstHeading && isSelectionInFirstHeading(visualRef.value),
   });
+}
+
+function onVisualChange(event) {
+  if (handleVisualOrderedListCheckbox(event)) {
+    scheduleVisualSync();
+  }
+}
+
+function onVisualClick(event) {
+  const checkbox = event.target?.closest?.('input.ol-task-check');
+  if (!checkbox) return;
+  setTimeout(() => {
+    handleVisualOrderedListCheckbox({ target: checkbox });
+    scheduleVisualSync();
+  }, 0);
 }
 
 async function onVisualPaste(event) {
@@ -324,7 +351,9 @@ onBeforeUnmount(() => {
         @input="onVisualInput"
         @focus="onVisualFocus"
         @blur="onVisualBlur"
-        @keydown="onVisualKeydown"
+        @keydown.capture="onVisualKeydown"
+        @change="onVisualChange"
+        @click="onVisualClick"
         @paste="onVisualPaste"
       />
 
@@ -483,9 +512,115 @@ onBeforeUnmount(() => {
       margin-bottom: 0.45em;
     }
 
+    :deep(ul) {
+      list-style-type: disc;
+      list-style-position: outside;
+      padding-left: 1.75em;
+    }
+
+    :deep(ul ul) {
+      list-style-type: circle;
+    }
+
+    :deep(ul ul ul) {
+      list-style-type: square;
+    }
+
+    :deep(ul ul ul ul) {
+      list-style-type: disc;
+    }
+
+    :deep(ul ul ul ul ul) {
+      list-style-type: circle;
+    }
+
+    :deep(ul ul ul ul ul ul) {
+      list-style-type: square;
+    }
+
+    :deep(ul > li::marker) {
+      color: var(--color-heading);
+    }
+
     :deep(li) {
       margin-top: 0.15em;
       margin-bottom: 0.15em;
+    }
+
+    :deep(ol.ol-task-list) {
+      list-style: none;
+      padding-left: 0;
+      margin-left: 0;
+    }
+
+    :deep(li.ol-task-item) {
+      list-style: none;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      gap: 0;
+      background: transparent;
+      border-radius: 0.375rem;
+      padding: 0.12em 0.35em 0.12em 0;
+      margin-left: 0;
+    }
+
+    :deep(li.ol-task-item > ol),
+    :deep(li.ol-task-item > ul) {
+      flex-basis: 100%;
+      width: 100%;
+      margin-top: 0.2em;
+      padding-left: 1.5em;
+      background: transparent;
+    }
+
+    :deep(.ol-task-prefix) {
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25em;
+      margin-right: 0.35em;
+      user-select: none;
+      pointer-events: auto;
+      background: transparent;
+      border-radius: 0.375rem 0 0 0.375rem;
+      padding: 0.1em 0.15em 0.1em 0.25em;
+      transition: background-color 0.15s ease;
+    }
+
+    :deep(.ol-task-index) {
+      min-width: 1.6em;
+      font-variant-numeric: tabular-nums;
+      color: var(--color-heading);
+    }
+
+    :deep(li.ol-task-item--done > .ol-task-prefix),
+    :deep(li.ol-task-item--done > .ol-task-text) {
+      background: color-mix(in srgb, var(--color-accent) 16%, transparent);
+    }
+
+    :deep(li.ol-task-item--done > .ol-task-text) {
+      border-radius: 0 0.375rem 0.375rem 0;
+      padding: 0.1em 0.35em 0.1em 0;
+    }
+
+    :deep(input.ol-task-check) {
+      margin: 0;
+      vertical-align: middle;
+      cursor: pointer;
+    }
+
+    :deep(.ol-task-text) {
+      flex: 1;
+      min-width: 0;
+      background: transparent;
+      border-radius: 0.375rem;
+      padding: 0.1em 0;
+      transition: background-color 0.15s ease, opacity 0.15s ease;
+    }
+
+    :deep(li.ol-task-item--done > .ol-task-text) {
+      opacity: 0.72;
     }
 
     :deep(li > p) {

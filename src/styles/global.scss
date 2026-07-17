@@ -66,6 +66,110 @@
       background-color: var(--color-prose-pre-bg);
       border: 1px solid var(--color-prose-pre-border);
     }
+
+    :where(ol.ol-task-list) {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    :where(li.ol-task-item) {
+      list-style: none;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      background: transparent;
+      border-radius: 0.375rem;
+      padding: 0.12em 0.35em 0.12em 0;
+    }
+
+    :where(li.ol-task-item > ol),
+    :where(li.ol-task-item > ul) {
+      flex-basis: 100%;
+      width: 100%;
+      margin-top: 0.2em;
+      padding-left: 1.5em;
+      background: transparent;
+    }
+
+    :where(.ol-task-prefix) {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25em;
+      margin-right: 0.35em;
+      user-select: none;
+      background: transparent;
+      border-radius: 0.375rem 0 0 0.375rem;
+      padding: 0.1em 0.15em 0.1em 0.25em;
+      transition: background-color 0.15s ease;
+    }
+
+    :where(.ol-task-index) {
+      min-width: 1.6em;
+      font-variant-numeric: tabular-nums;
+      color: var(--color-heading);
+    }
+
+    :where(input.ol-task-check) {
+      margin: 0;
+      vertical-align: middle;
+    }
+
+    :where(.ol-task-text) {
+      flex: 1;
+      min-width: 0;
+      background: transparent;
+      border-radius: 0.375rem;
+      padding: 0.1em 0;
+      transition: background-color 0.15s ease, opacity 0.15s ease;
+    }
+
+    :where(li.ol-task-item--done > .ol-task-prefix),
+    :where(li.ol-task-item--done > .ol-task-text) {
+      background: color-mix(in srgb, var(--color-accent) 16%, transparent);
+    }
+
+    :where(li.ol-task-item--done > .ol-task-text) {
+      border-radius: 0 0.375rem 0.375rem 0;
+      padding: 0.1em 0.35em 0.1em 0;
+      opacity: 0.72;
+    }
+
+    /* Typora 风格无序列表层级：实心圆 → 空心圆 → 方块 */
+    :where(ul) {
+      list-style-type: disc;
+      list-style-position: outside;
+      padding-left: 1.75em;
+    }
+
+    :where(ul ul) {
+      list-style-type: circle;
+      margin-top: 0.15em;
+      margin-bottom: 0.15em;
+    }
+
+    :where(ul ul ul) {
+      list-style-type: square;
+    }
+
+    :where(ul ul ul ul) {
+      list-style-type: disc;
+    }
+
+    :where(ul ul ul ul ul) {
+      list-style-type: circle;
+    }
+
+    :where(ul ul ul ul ul ul) {
+      list-style-type: square;
+    }
+
+    :where(ul > li::marker) {
+      color: var(--color-heading);
+    }
+
+    :where(ul > li) {
+      padding-left: 0.2em;
+    }
   }
 
   [data-theme='night'] .prose-moon {
