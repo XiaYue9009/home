@@ -1,4 +1,4 @@
-import { renderMarkdown } from '@/lib/content/markdown.js';
+import { markdownToHtml } from '@/lib/editor/content-format.js';
 import { parseUpdatedAt } from '@/lib/supabase/client.js';
 import {
   extractTitleFromContent,
@@ -289,7 +289,7 @@ export function cardBodyMarkdown(content = '') {
 export function cardPreviewHtml(content = '') {
   const body = cardBodyMarkdown(content);
   if (!body) return '<p class="upcoming-card-preview__empty">点击编辑内容…</p>';
-  return renderMarkdown(body);
+  return markdownToHtml(body);
 }
 
 export function cardExcerpt(content = '', maxLength = 72) {

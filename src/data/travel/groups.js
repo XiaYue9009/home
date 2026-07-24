@@ -1,2 +1,2 @@
-/** 抖音收藏夹分组（本地缓存），由 scripts/sync-douyin-collection.mjs 写入 */
+/** 旅行视频收藏夹分组（本地静态缓存） */
 export default [];

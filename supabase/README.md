@@ -6,7 +6,7 @@
 |------|------|
 | `migrations/` | **正式 schema 来源**，通过 `pnpm db:push` 应用到远程 |
 | `*.sql`（根目录） | 历史参考副本，与 migrations 内容一致 |
-| `functions/` | Edge Functions（如 `fetch-douyin-collection`、`upload-github-image`） |
+| `functions/` | Edge Functions（如 `upload-github-image`） |
 
 ## Edge Function：GitHub 图床
 

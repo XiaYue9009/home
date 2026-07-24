@@ -7,6 +7,14 @@ function normalizeHtml(html = '') {
     .trim();
 }
 
+function escapeHtml(text = '') {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
 function inlineMarkdown(node) {
   let result = '';
 
@@ -19,6 +27,18 @@ function inlineMarkdown(node) {
     if (child.nodeType !== Node.ELEMENT_NODE) return;
 
     const tag = child.tagName.toLowerCase();
+
+    if (tag === 'input' && child.classList.contains('ol-task-check')) {
+      return;
+    }
+
+    if (tag === 'span' && (child.classList.contains('ol-task-text') || child.classList.contains('ol-task-prefix') || child.classList.contains('ol-task-index'))) {
+      if (child.classList.contains('ol-task-text') || child.classList.contains('ol-task-prefix')) {
+        result += inlineMarkdown(child);
+      }
+      return;
+    }
+
     const inner = inlineMarkdown(child);
 
     if (tag === 'strong' || tag === 'b') {
@@ -77,6 +97,54 @@ function inlineMarkdown(node) {
   return result;
 }
 
+function extractListItemText(item) {
+  const clone = item.cloneNode(true);
+  clone
+    .querySelectorAll('ol, ul, .ol-task-prefix, input.ol-task-check, .ol-task-index')
+    .forEach((node) => node.remove());
+  return inlineMarkdown(clone).trim();
+}
+
+function listItemMarkdown(item, ordered, depth = 0) {
+  const indent = '  '.repeat(depth);
+  const checkbox =
+    item.querySelector(':scope > .ol-task-prefix > input.ol-task-check') ||
+    item.querySelector(':scope > input.ol-task-check');
+  const text = extractListItemText(item);
+
+  let line = '';
+  if (ordered) {
+    const siblings = [...item.parentElement.children].filter((node) => node.tagName === 'LI');
+    const index = siblings.indexOf(item) + 1;
+    if (checkbox) {
+      line = `${indent}${index}. [${checkbox.checked ? 'x' : ' '}] ${text}`;
+    } else {
+      line = `${indent}${index}. ${text}`;
+    }
+  } else {
+    line = `${indent}- ${text}`;
+  }
+
+  let result = `${line}\n`;
+
+  item.querySelectorAll(':scope > ol, :scope > ul').forEach((nestedList) => {
+    result += listMarkdown(nestedList, depth + 1);
+  });
+
+  return result;
+}
+
+function listMarkdown(listNode, depth = 0) {
+  const ordered = listNode.tagName.toLowerCase() === 'ol';
+  let result = '';
+
+  listNode.querySelectorAll(':scope > li').forEach((item) => {
+    result += listItemMarkdown(item, ordered, depth);
+  });
+
+  return result;
+}
+
 function blockMarkdown(node) {
   if (node.nodeType === Node.TEXT_NODE) {
     const text = node.textContent?.trim();
@@ -114,16 +182,7 @@ function blockMarkdown(node) {
   }
 
   if (tag === 'ul' || tag === 'ol') {
-    const ordered = tag === 'ol';
-    let index = 1;
-    let result = '';
-
-    node.querySelectorAll(':scope > li').forEach((item) => {
-      const prefix = ordered ? `${index}. ` : '- ';
-      result += `${prefix}${inlineMarkdown(item).trim()}\n`;
-      index += 1;
-    });
-
+    const result = listMarkdown(node, 0);
     return result ? `${result}\n` : '';
   }
 
@@ -154,8 +213,66 @@ function blockMarkdown(node) {
   return result;
 }
 
+const ORDERED_TASK_LINE_RE = /^(\s*)(\d+)\.\s+\[([ xX])\]\s+(.*)$/;
+
+function buildOrderedTaskHtml(items, start = 1) {
+  const lis = items
+    .map(({ done, text }, offset) => {
+      const checked = done ? ' checked' : '';
+      const doneAttr = done ? ' data-done="true"' : ' data-done="false"';
+      const doneClass = done ? ' ol-task-item--done' : '';
+      const indexLabel = `${start + offset}.`;
+      return (
+        `<li class="ol-task-item${doneClass}"${doneAttr}>` +
+        '<span class="ol-task-prefix" contenteditable="false">' +
+        `<input type="checkbox" class="ol-task-check"${checked} />` +
+        `<span class="ol-task-index">${indexLabel}</span>` +
+        '</span>' +
+        `<span class="ol-task-text">${escapeHtml(text)}</span>` +
+        '</li>'
+      );
+    })
+    .join('');
+
+  return `<ol class="ol-task-list" start="${start}">${lis}</ol>`;
+}
+
+function convertOrderedTaskListsToHtml(markdown = '') {
+  const lines = markdown.split('\n');
+  const result = [];
+  let index = 0;
+
+  while (index < lines.length) {
+    const match = lines[index].match(ORDERED_TASK_LINE_RE);
+    if (!match) {
+      result.push(lines[index]);
+      index += 1;
+      continue;
+    }
+
+    const baseIndent = match[1].length;
+    const start = Number(match[2]);
+    const items = [];
+
+    while (index < lines.length) {
+      const current = lines[index].match(ORDERED_TASK_LINE_RE);
+      if (!current || current[1].length !== baseIndent) break;
+      items.push({
+        done: current[3].trim().toLowerCase() === 'x',
+        text: current[4],
+      });
+      index += 1;
+    }
+
+    result.push(buildOrderedTaskHtml(items, start));
+  }
+
+  return result.join('\n');
+}
+
 export function markdownToHtml(markdown = '') {
-  return renderMarkdown(markdown || '');
+  const prepared = convertOrderedTaskListsToHtml(markdown || '');
+  return renderMarkdown(prepared);
 }
 
 export function htmlToMarkdown(html = '') {

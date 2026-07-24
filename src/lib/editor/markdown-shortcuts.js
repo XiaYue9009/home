@@ -1,4 +1,5 @@
 import { nextTick } from 'vue';
+import { applyMarkdownListKeydown } from '@/lib/editor/list-editing.js';
 
 function isBracketLeft(event) {
   return event.code === 'BracketLeft' || event.key === '[' || event.key === '{';
@@ -23,6 +24,9 @@ export const MARKDOWN_SHORTCUTS = [
   { keys: 'Ctrl+T', label: '表格', icon: 'table' },
   { keys: 'Ctrl+Shift+[', label: '有序列表', icon: 'ol' },
   { keys: 'Ctrl+Shift+]', label: '无序列表', icon: 'ul' },
+  { keys: 'Tab', label: '列表下级缩进', icon: 'ol' },
+  { keys: 'Shift+Tab', label: '列表上级反缩进', icon: 'ul' },
+  { keys: 'Ctrl+Shift+Enter', label: '有序列表完成切换', icon: 'ol' },
   { keys: 'Ctrl+Shift+C', label: '字体颜色', icon: 'color' },
   { keys: 'Ctrl+Shift+I', label: '插入图片', icon: 'image' },
   { keys: 'Ctrl+/', label: '切换富文本/Markdown', icon: 'markdown' },
@@ -194,7 +198,13 @@ function toggleMarkdownList(textarea, value, listType) {
  * @returns {boolean} 是否已处理该按键
  */
 export function applyMarkdownShortcut(event, textarea, { value, setValue, onInsertImage } = {}) {
-  if (!textarea || !isModKey(event)) return false;
+  if (!textarea) return false;
+
+  if (applyMarkdownListKeydown(event, textarea, { value, setValue })) {
+    return true;
+  }
+
+  if (!isModKey(event)) return false;
 
   const key = event.key.toLowerCase();
   const shift = event.shiftKey;

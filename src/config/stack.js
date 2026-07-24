@@ -16,7 +16,7 @@ export const STACK_LINKS = [
       '后续优化卡片的云端读写（RPC / Postgres）',
       'LOL 常玩英雄列表的云端同步',
       'Markdown 图片兜底上传到 Storage（upcoming-images）',
-      'Edge Function：GitHub 图床上传、抖音收藏拉取',
+      'Edge Function：GitHub 图床上传',
     ],
     setup: [
       '在项目根目录 .env 配置 PUBLIC_SUPABASE_URL 与 PUBLIC_SUPABASE_ANON_KEY',
@@ -117,91 +117,11 @@ export const STACK_LINKS = [
       'src/components/motion/',
     ],
   },
-  {
-    key: 'cloudflare-stream',
-    emoji: '☁️',
-    label: 'Cloudflare Stream',
-    description: '全球 CDN 视频托管与转码，按分钟计费，适合站点内嵌播放',
-    accent: '#f6821f',
-    href: 'https://www.cloudflare.com/products/cloudflare-stream/',
-    group: 'video',
-    role: '视频托管候选（全球 CDN）',
-    summary:
-      '旅行页目前以外链抖音收藏为主，未自建视频托管。Cloudflare Stream 适合以后把站内自制/转码视频放到全球 CDN 上播放。',
-    usages: [
-      '可作为旅行或其它栏目的自有视频托管方案',
-      '提供转码、自适应码率与嵌入播放器',
-      '与现有「外链抖音」模式互补：外链灵感 vs 自有成片',
-    ],
-    setup: [
-      '在 Cloudflare Dashboard 开通 Stream',
-      '上传视频后获取播放 URL / iframe embed',
-      '前端可用原生 video 或官方嵌入代码；密钥勿放进前端仓库',
-      '若走服务端上传，可考虑再包一层 Edge Function',
-    ],
-    relatedPaths: [
-      'src/views/CategoryPage/index.vue（旅行视频区）',
-      'src/components/travel/TravelVideoCard/',
-    ],
-  },
-  {
-    key: 'mux',
-    emoji: '🎥',
-    label: 'Mux',
-    description: '面向开发者的视频 API：上传、转码、播放与数据分析',
-    accent: '#fa50b5',
-    href: 'https://www.mux.com',
-    group: 'video',
-    role: '视频托管候选（开发者 API）',
-    summary:
-      'Mux 提供完整视频 API 与播放数据。本站尚未接入；若需要上传直传、播放分析或更细的编码控制，可优先评估 Mux。',
-    usages: [
-      '直传上传 + 自动转码的完整链路',
-      '播放质量、完播率等数据分析',
-      '适合做成「站内视频库」而不是单纯外链',
-    ],
-    setup: [
-      '在 Mux Dashboard 创建环境并拿到 Token',
-      '上传与签名逻辑放在服务端或 Supabase Edge Function',
-      '前端只使用播放 ID / 签名 URL，不暴露写权限密钥',
-    ],
-    relatedPaths: [
-      'src/components/travel/TravelVideoCard/',
-      'supabase/functions/（可扩展上传代理）',
-    ],
-  },
-  {
-    key: 'bunny-stream',
-    emoji: '🐰',
-    label: 'Bunny Stream',
-    description: '性价比高的视频 CDN / 流媒体托管，支持自适应码率',
-    accent: '#ff671f',
-    href: 'https://bunny.net/stream/',
-    group: 'video',
-    role: '视频托管候选（性价比）',
-    summary:
-      'Bunny Stream 以价格和易用性见长，适合个人站自建视频库。当前旅行内容仍走抖音收藏同步，Bunny 作为低成本备选收录。',
-    usages: [
-      '低成本托管自制旅行/教程视频',
-      '自适应码率流媒体，适合国内访问优化时对比选型',
-      '可与 Cloudflare / Mux 一起做方案对比后再落地',
-    ],
-    setup: [
-      '在 Bunny.net 开通 Stream Library',
-      '上传视频后使用 Library 提供的 embed / HLS 地址',
-      'API Key 仅放服务端；前端只读播放地址',
-    ],
-    relatedPaths: [
-      'src/data/travel/',
-      'src/components/travel/TravelVideoCard/',
-    ],
-  },
 ];
 
 export const STACK_GROUPS = [
   { key: 'backend', label: '后端 / BaaS' },
   { key: 'animation', label: '动画' },
-  { key: 'video', label: '视频托管' },
 ];
 
 export function stackLinksByGroup() {

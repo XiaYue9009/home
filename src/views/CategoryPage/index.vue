@@ -22,7 +22,6 @@ import {
   ENTRANCE_POOL,
   pickCycleAnimation,
 } from '@/lib/motion/presets.js';
-import { triggerAnimate } from '@/lib/motion/trigger.js';
 
 const props = defineProps({
   category: { type: String, required: true },
@@ -49,20 +48,6 @@ onMounted(async () => {
 
 async function handleAddHero(hero) {
   await lolStore.addHero(hero.id);
-}
-
-function refreshPulse(event) {
-  if (!travelStore.loading && !travelStore.syncing) {
-    triggerAnimate(event.currentTarget, 'rubberBand', { speed: 'faster' });
-  }
-}
-
-async function handleTravelSync() {
-  try {
-    await travelStore.syncFromDouyin();
-  } catch {
-    // store 已写入 error
-  }
 }
 
 function handleGeoFilterChange(key, event) {
@@ -166,21 +151,7 @@ const filteredPlaceOptions = computed(() => {
           :delay="MOTION_CATEGORY.desc.delay"
           :speed="MOTION_CATEGORY.desc.speed"
         >
-          抖音收藏夹 · {{ travelStore.collectsFolders.join(' / ') }} · Supabase 库 ·
-          <a
-            v-if="travelStore.displayAccount.profileUrl"
-            :href="travelStore.displayAccount.profileUrl"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="text-link"
-          >
-            {{ travelStore.displayAccount.nickname || '我的抖音' }}
-          </a>
-          <span v-else>已同步账号</span>
-          <span v-if="travelStore.lastSyncLabel" class="text-subtle">
-            · 最近同步 {{ travelStore.lastSyncLabel }}
-          </span>
-          <span v-if="travelStore.isAutoSyncDay" class="text-subtle"> · 今日为定时同步日</span>
+          旅行足迹与视频收藏，内容待补充。
         </MotionEnter>
       </div>
       <div v-else-if="category === 'upcoming'" class="category-page-header__row">
@@ -322,13 +293,12 @@ const filteredPlaceOptions = computed(() => {
 
     <section v-if="category === 'travel'" class="mb-14">
       <ScrollReveal
-        class="mb-6 flex flex-wrap items-center justify-between gap-3"
+        class="mb-6 flex flex-wrap items-center gap-3"
         :animation="MOTION_CATEGORY.sectionTitle.animation"
         :speed="MOTION_CATEGORY.sectionTitle.speed"
       >
-        <div class="flex flex-wrap items-center gap-3">
-          <h2 class="font-display text-xl font-semibold text-heading">收藏夹</h2>
-          <div class="travel-view-toggle flex gap-1 rounded-full bg-white/5 p-1">
+        <h2 class="font-display text-xl font-semibold text-heading">收藏夹</h2>
+        <div class="travel-view-toggle flex gap-1 rounded-full bg-white/5 p-1">
             <button
               type="button"
               class="travel-view-toggle__btn"
@@ -343,19 +313,9 @@ const filteredPlaceOptions = computed(() => {
               :class="{ 'travel-view-toggle__btn--active': travelStore.viewMode === 'geo' }"
               @click="travelStore.setViewMode('geo')"
             >
-              地理分组
-            </button>
-          </div>
+            地理分组
+          </button>
         </div>
-        <button
-          type="button"
-          class="btn-ghost text-sm"
-          :disabled="travelStore.loading || travelStore.syncing"
-          @click="handleTravelSync"
-          @mouseenter="refreshPulse"
-        >
-          {{ travelStore.syncing ? '同步中…' : '手动同步' }}
-        </button>
       </ScrollReveal>
 
       <ScrollReveal
@@ -411,25 +371,10 @@ const filteredPlaceOptions = computed(() => {
         :animation="MOTION_CATEGORY.loading.animation"
         :speed="MOTION_CATEGORY.loading.speed"
       >
-        正在从 Supabase 加载旅行视频…
-      </MotionEnter>
-
-      <MotionEnter
-        v-else-if="travelStore.syncing"
-        tag="p"
-        class="text-muted"
-        :animation="MOTION_CATEGORY.loading.animation"
-        :speed="MOTION_CATEGORY.loading.speed"
-      >
-        正在从抖音增量同步「{{ travelStore.collectsFolders.join(' / ') }}」…
+        正在加载旅行视频…
       </MotionEnter>
 
       <template v-else-if="travelStore.hasDisplayContent">
-        <p v-if="travelStore.syncInfo" class="mb-4 text-sm text-subtle">
-          本次同步：新增 {{ travelStore.syncInfo.inserted }} 条，跳过 {{ travelStore.syncInfo.skipped }} 条，库内共
-          {{ travelStore.syncInfo.total }} 条
-        </p>
-
         <div
           v-for="group in travelStore.displayGroups"
           :key="group.keyword"
@@ -488,10 +433,7 @@ const filteredPlaceOptions = computed(() => {
       <ScrollReveal v-else :animation="MOTION_CATEGORY.empty.animation">
         <div class="glass-card p-8 text-center">
           <p class="text-muted">暂无旅行视频。</p>
-          <p class="mt-2 text-sm text-subtle">
-            默认读取名称含「{{ travelStore.collectsFolders.join(' / ') }}」的收藏夹。每月 1 号、16 号自动从抖音增量同步，其余时间读取
-            Supabase。点击「手动同步」可立即拉取新增视频。
-          </p>
+          <p class="mt-2 text-sm text-subtle">旅行模块内容已清空，后续可在本地数据或 Supabase 中重新添加。</p>
         </div>
       </ScrollReveal>
 

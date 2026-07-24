@@ -40,29 +40,6 @@ export function dbRowToVideo(row) {
   };
 }
 
-export function videoToDbRow(video) {
-  return {
-    id: String(video.id || ''),
-    title: video.title || '',
-    cover: video.cover || '',
-    author: video.author || '',
-    share_url: video.shareUrl || '',
-    digg_count: Number(video.diggCount) || 0,
-    play_count: Number(video.playCount) || 0,
-    create_time: video.createTime || null,
-    folder_id: video.folderId || '',
-    folder_name: video.folderName || '',
-    category: video.category || '',
-    province: video.province || '',
-    city: video.city || '',
-    district: video.district || '',
-    place_name: video.placeName || '',
-    geo_label: video.geoLabel || '',
-    poi_name: video.poiName || '',
-    topics: Array.isArray(video.topics) ? video.topics : [],
-  };
-}
-
 export async function fetchCloudTravelVideos(filters = {}) {
   const supabase = getSupabaseClient();
   if (!supabase) return null;
@@ -88,35 +65,6 @@ export async function fetchCloudTravelVideos(filters = {}) {
   };
 }
 
-export async function appendCloudTravelVideos({ videos = [], account = null, syncType = 'manual', autoSyncDate = null }) {
-  const supabase = getSupabaseClient();
-  if (!supabase) return null;
-
-  const rows = videos.map(videoToDbRow).filter((row) => row.id);
-  if (!rows.length) {
-    return { inserted: 0, skipped: 0, total: 0 };
-  }
-
-  const { data, error } = await supabase.rpc('append_travel_videos', {
-    body: {
-      videos: rows,
-      account: account || {},
-      sync_type: syncType,
-      auto_sync_date: autoSyncDate,
-    },
-  });
-
-  if (error) throw error;
-
-  const payload = parseRpcJson(data);
-  return {
-    inserted: payload?.inserted ?? 0,
-    skipped: payload?.skipped ?? 0,
-    total: payload?.total ?? 0,
-    updatedAt: payload?.updated_at || payload?.updatedAt || '',
-  };
-}
-
 export async function fetchCloudTravelSyncMeta() {
   const supabase = getSupabaseClient();
   if (!supabase) return null;
@@ -129,9 +77,6 @@ export async function fetchCloudTravelSyncMeta() {
 
   return {
     account,
-    lastDouyinSyncAt: payload?.last_douyin_sync_at || payload?.lastDouyinSyncAt || null,
-    lastAutoSyncDate: payload?.last_auto_sync_date || payload?.lastAutoSyncDate || null,
-    lastSyncType: payload?.last_sync_type || payload?.lastSyncType || '',
     updatedAt: payload?.updated_at || payload?.updatedAt || '',
   };
 }
